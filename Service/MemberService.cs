@@ -72,7 +72,7 @@ namespace TwitchChatBot.Service
         {
             string url = "https://id.twitch.tv/oauth2/validate";
             var client = new WebClient();
-            client.Headers.Add("Authorization", $"Oauth {accessToken}");
+            client.Headers.Add("Authorization", $"Bearer {accessToken}");
             var response = client.DownloadString(url);
 
             User user = JsonConvert.DeserializeObject<User>(response);

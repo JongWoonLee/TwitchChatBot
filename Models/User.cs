@@ -17,6 +17,6 @@ namespace TwitchChatBot.Models
         [JsonProperty(PropertyName = "user_id")]
         public string UserId { get; set; }
         [JsonProperty(PropertyName = "expires_in")]
-        public string ExpiresIn { get; set; }
+        public int ExpiresIn { get; set; }
     }
 }
