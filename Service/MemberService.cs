@@ -51,11 +51,6 @@ namespace TwitchChatBot.Service
             return new Tuple<TwitchToken, User>(twitchToken, user);
         }
 
-        /// <summary>
-        /// 놀랍게도 이게 Validate랑 같은 역할을 해야할거 같은데
-        /// </summary>
-        /// <param name="twitchToken"></param>
-        /// <returns></returns>
         public User UserProfile(TwitchToken twitchToken) 
         {
             string url = "https://api.twitch.tv/helix/";
