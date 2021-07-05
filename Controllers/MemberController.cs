@@ -6,8 +6,7 @@ using System.Net;
 using System.Threading.Tasks;
 using TwitchChatBot.Models;
 using TwitchChatBot.Service;
-using System.Net;
-
+using TwitchChatBot.Service.ChatBotEx.bot;
 
 namespace TwitchChatBot.Controllers
 {
@@ -15,10 +14,12 @@ namespace TwitchChatBot.Controllers
     {
         
         private readonly MemberService _service;
+        private SimpleTwitchBotService _stbservice;
 
-        public MemberController(MemberService service)
+        public MemberController(MemberService service, SimpleTwitchBotService stbservice)
         {
             _service = service;
+            _stbservice = stbservice;
         }
 
         /// <summary>
@@ -44,5 +45,29 @@ namespace TwitchChatBot.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [HttpGet, Route("/member/startbot")]
+        public IActionResult StartBot()
+        {
+
+            return View();
+        }
+
+        [HttpPost, Route("/member/startbot")]
+        public IActionResult StartBot(string msg)
+        {
+            //string channelName = "jongwoonlee";
+            _stbservice.StartBot(msg);
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet, Route("/member/admin")]
+        public IActionResult Admin()
+        {
+            ViewData["ManagedBot"] = _stbservice.ManagedBot.Keys;
+            return View();
+        }
     }
+
+    
 }

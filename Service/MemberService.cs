@@ -40,6 +40,7 @@ namespace TwitchChatBot.Service
             data["client_id"] = "jjvh028bmtssj5x8fov8lu3snk3wut";
             data["client_secret"] = this.ClientSecret;
             data["redirect_uri"] = uri;
+            data["scope"] = "user:read:email";
             data["code"] = code;
 
             var response = client.UploadValues(url, "POST", data);
