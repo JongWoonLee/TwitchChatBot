@@ -17,7 +17,7 @@ namespace TwitchChatBot.Service
 
         public List<Command> Commands { get; set; }
 
-        public List<StreamerDetail> CurrentBotInUseList { get; set; }
+        public List<StreamerDetail> CurrentBotInUseUserList { get; set; }
 
 
         public SimpleTwitchBotService(string connectionString)
@@ -33,13 +33,14 @@ namespace TwitchChatBot.Service
             return new MySqlConnection(ConnectionString);
         }
 
-        public async void StartBot(string channelName)
+        public async void StartBot(string channelName, string token)
         {
-            string password = "oauth:0yunexdkuhr1206wq0qbiobhp1xnfx";
+
+            string password = $"oauth:{token}";
             string botUsername = "simple_irc_bot";
 
             SimpleTwitchBot simpleTwitchBot = new SimpleTwitchBot(botUsername, password);
-            await simpleTwitchBot.Start();
+            simpleTwitchBot.Start().SafeFireAndForget();
             ManagedBot.Add(channelName, simpleTwitchBot);
             await simpleTwitchBot.JoinChannel($"{channelName}");
             await simpleTwitchBot.SendMessage($"{channelName}", "Here comes a View Bot");
@@ -97,7 +98,7 @@ namespace TwitchChatBot.Service
 
         private void Initialize()
         {
-            string SQL = "select * from streamer_detail where bot_in_use = 1";
+            string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id";
             using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
@@ -108,7 +109,7 @@ namespace TwitchChatBot.Service
                     {
                         while (reader.Read())
                         {
-                            CurrentBotInUseList.Add(
+                            CurrentBotInUseUserList.Add(
                                 new StreamerDetail()
                             ); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                             //StartBot();

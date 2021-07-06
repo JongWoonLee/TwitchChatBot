@@ -30,7 +30,7 @@ namespace TwitchChatBot.Service
             return new MySqlConnection(ConnectionString);
         }
 
-        public Tuple<TwitchToken, User> GetReleasesWebClient(string code, string uri)
+        public Tuple<TwitchToken, User> ConnectReleasesWebClient(string code, string uri)
         {
             string url = "https://id.twitch.tv/oauth2/token";
             var client = new WebClient();
@@ -40,7 +40,6 @@ namespace TwitchChatBot.Service
             data["client_id"] = "jjvh028bmtssj5x8fov8lu3snk3wut";
             data["client_secret"] = this.ClientSecret;
             data["redirect_uri"] = uri;
-            data["scope"] = "user:read:email";
             data["code"] = code;
 
             var response = client.UploadValues(url, "POST", data);
@@ -52,7 +51,7 @@ namespace TwitchChatBot.Service
             return new Tuple<TwitchToken, User>(twitchToken, user);
         }
 
-        public User UserProfile(TwitchToken twitchToken) 
+        public User UserProfile(TwitchToken twitchToken)  // 지금 사실상 안해도 되긴함
         {
             string url = "https://api.twitch.tv/helix/";
             var client = new WebClient();

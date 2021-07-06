@@ -15,25 +15,29 @@ namespace TwitchChatBot.Controllers
         
         private readonly MemberService _service;
         private SimpleTwitchBotService _stbservice;
+        private ThreadExecutorService _teservice;
 
-        public MemberController(MemberService service, SimpleTwitchBotService stbservice)
+        public MemberController(MemberService service, SimpleTwitchBotService stbservice, ThreadExecutorService teservice)
         {
             _service = service;
             _stbservice = stbservice;
+            _teservice = teservice;
         }
 
         /// <summary>
         /// Member View로 이동하는 GET 메소드
         /// </summary>
+        /// <param name="code"></param>
+        /// <param name="scope"></param>
         /// <returns></returns>
         [HttpGet, Route("/member/index")]
-        public IActionResult Index(string code, string scope)
+        public IActionResult Index(string code, string[] scope)
         {
             if(string.IsNullOrEmpty(code))
             {
-            return Redirect("https://id.twitch.tv/oauth2/authorize?client_id=jjvh028bmtssj5x8fov8lu3snk3wut&redirect_uri=https://localhost:44348/member/index&response_type=code&scope=viewing_activity_read");
+                return Redirect("https://id.twitch.tv/oauth2/authorize?client_id=jjvh028bmtssj5x8fov8lu3snk3wut&redirect_uri=https://localhost:44348/member/index&response_type=code&scope=chat:edit chat:read");
             }
-            Tuple<TwitchToken,User> tuple = _service.GetReleasesWebClient(code, "https://localhost:44348/member/index");
+            Tuple<TwitchToken,User> tuple = _service.ConnectReleasesWebClient(code, "https://localhost:44348/member/index");
 
             if(Request.Cookies["user_id"] == null)
             {
@@ -56,7 +60,12 @@ namespace TwitchChatBot.Controllers
         public IActionResult StartBot(string msg)
         {
             //string channelName = "jongwoonlee";
-            _stbservice.StartBot(msg);
+            var token = Request.Cookies["access_token"];
+            //_stbservice.StartBot(msg, token);
+
+            string ip = "irc.chat.twitch.tv";
+            int port = 6667;
+            _teservice.RegisterBot(ip,port,"jongwoonlee",token, "jongwoonlee");
 
             return RedirectToAction("Index", "Home");
         }

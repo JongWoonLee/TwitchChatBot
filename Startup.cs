@@ -24,8 +24,11 @@ namespace TwitchChatBot
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(Configuration.GetConnectionString("DefaultConnection"),Configuration.GetValue<string>("Client_Secret"))));
-            services.Add(new ServiceDescriptor(typeof(SimpleTwitchBotService), new SimpleTwitchBotService(Configuration.GetConnectionString("DefaultConnection"))));
+            var connectionString = Configuration.GetConnectionString("DefaultConnection");
+            services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(connectionString, Configuration.GetValue<string>("Client_Secret"))));
+            services.Add(new ServiceDescriptor(typeof(SimpleTwitchBotService), new SimpleTwitchBotService(connectionString)));
+            services.Add(new ServiceDescriptor(typeof(ThreadExecutorService), new ThreadExecutorService(connectionString)));
+
             services.AddControllersWithViews();
             Console.WriteLine(Configuration.GetValue<string>("Client_Secret"));
         } 
