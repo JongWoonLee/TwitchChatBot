@@ -8,7 +8,7 @@ namespace TwitchChatBot.Service
 {
     public class ThreadExecutorService
     {
-        public Dictionary<int, IrcThreadPingMixture> ManagedBot { get; set; }
+        public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
         public string ConnectionString { get; set; }
 
         private List<Command> Commands;
@@ -20,7 +20,7 @@ namespace TwitchChatBot.Service
 
         public ThreadExecutorService(string connectionString)
         {
-            this.ManagedBot = new Dictionary<int, IrcThreadPingMixture>();
+            this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.ConnectionString = connectionString;
             this.Commands = FindCommands();
             Initialize();
@@ -40,7 +40,7 @@ namespace TwitchChatBot.Service
                         while (reader.Read())
                         {
                             ManagedBot.Add(1,
-                                new IrcThreadPingMixture(null,null,null,null)
+                                new SimpleTwitchBot(null,null,null,ConnectionString)
                             ); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                             //StartBot();
                         }
@@ -86,16 +86,16 @@ namespace TwitchChatBot.Service
             }
         }
 
-        public void RegisterBot(int key, string ip, int port, string userName, string password, string channel)
+        public void RegisterBot(long id , string ip, int port, string userName, string password, string channel)
         {
             var ircClient =  new IrcClient(ip, port, userName, password, channel);
 
-            ManagedBot.Add(key, new IrcThreadPingMixture(
+            ManagedBot.Add(id, new SimpleTwitchBot(
                 ircClient,
                 new PingSender(ircClient),
                 this.Commands,
-                this.ConnectionString
-                ));
+                ConnectionString
+                )) ;
         }
     }
 }

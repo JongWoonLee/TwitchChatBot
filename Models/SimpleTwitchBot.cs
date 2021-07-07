@@ -1,129 +1,88 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Threading;
 
-namespace TwitchChatBot.Service
+namespace TwitchChatBot.Models
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
-    using System.IO;
-    using System.Net.Sockets;
-    using System.Threading.Tasks;
-    using System.Net.Security;
-    using System.Security.Cryptography.X509Certificates;
-    using System.Threading;
-    using System.Diagnostics;
-
-    namespace ChatBotEx.bot
+    public class SimpleTwitchBot
     {
-        public class SimpleTwitchBot
+        private Thread Thread;
+        public IrcClient IrcClient { get; set; }
+        private PingSender PingSender;
+        public List<Command> Commands;
+        private string ConnectionString;
+
+        public SimpleTwitchBot(IrcClient ircClient, PingSender pingSender, List<Command> commands, string connectionString)
         {
-            const string ip = "irc.chat.twitch.tv";
-            const int port = 6697;
+            this.IrcClient = ircClient;
+            this.PingSender = pingSender;
+            this.Commands = commands;
+            this.ConnectionString = connectionString;
+            Thread = new Thread(new ThreadStart(this.Run));
+            Start();
+        }
 
-            private string nick;
-            private string password;
-            private StreamReader streamReader;
-            private StreamWriter streamWriter;
-            private TaskCompletionSource<int> connected = new TaskCompletionSource<int>();
+        public void Start()
+        {
+            Thread.IsBackground = true;
+            Thread.Start();
+        }
 
-            public event TwitchChatEventHandler OnMessage = delegate { };
-            public delegate void TwitchChatEventHandler(object sender, TwitchChatMessage e);
-
-            public class TwitchChatMessage : EventArgs
+        public void Run()
+        {
+            while (true)
             {
-                public string Sender { get; set; }
-                public string Message { get; set; }
-                public string Channel { get; set; }
-            }
-
-            public SimpleTwitchBot(string nick, string password)
-            {
-                this.nick = nick;
-                this.password = password;
-            }
-
-
-
-            public async Task Start()
-            {
-                Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                var tcpClient = new TcpClient();
-                await tcpClient.ConnectAsync(ip, port);
-                SslStream sslStream = new SslStream(
-                    tcpClient.GetStream(),
-                    false,
-                    ValidateServerCertificate,
-                    null
-                );
-                await sslStream.AuthenticateAsClientAsync(ip);
-
-                //streamReader = new StreamReader(tcpClient.GetStream());
-                //streamWriter = new StreamWriter(tcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true }; //  NO SSL Stream port 6667; 
-
-                streamReader = new StreamReader(sslStream);
-                streamWriter = new StreamWriter(sslStream) { NewLine = "\r\n", AutoFlush = true };
-
-                await streamWriter.WriteLineAsync($"PASS {password}");
-                await streamWriter.WriteLineAsync($"NICK {nick}");
-                connected.SetResult(0);
-
-                while (true)
+                // Read any message from the chat room
+                string message = IrcClient.ReadMessage();
+                Console.WriteLine(message); // Print raw irc messages
+                //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
+                if (!string.IsNullOrEmpty(message))
                 {
-                    string line = await streamReader.ReadLineAsync();
-                    //Console.WriteLine(line);
-
-                    string[] split = line.Split(" ");
-                    //PING :tmi.twitch.tv
-                    //Respond with PONG :tmi.twitch.tv
-                    if (line.StartsWith("PING"))
+                    if (message.Contains("PRIVMSG"))
                     {
-                        Console.WriteLine("PONG");
-                        await streamWriter.WriteLineAsync($"PONG {split[1]}");
-                    }
+                        // Messages from the users will look something like this (without quotes):
+                        // Format: ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
 
-                    if (split.Length > 2 && split[1] == "PRIVMSG")
-                    {
-                        //:mytwitchchannel!mytwitchchannel@mytwitchchannel.tmi.twitch.tv 
-                        // ^^^^^^^^
-                        //Grab this name here
-                        int exclamationPointPosition = split[0].IndexOf("!");
-                        string username = split[0].Substring(1, exclamationPointPosition - 1);
-                        //Skip the first character, the first colon, then find the next colon
-                        int secondColonPosition = line.IndexOf(':', 1);//the 1 here is what skips the first character
-                        string message = line.Substring(secondColonPosition + 1);//Everything past the second colon
-                        string channel = split[2].TrimStart('#');
+                        // Modify message to only retrieve user and message
+                        int intIndexParseSign = message.IndexOf('!');
+                        string userName = message.Substring(1, intIndexParseSign - 1); // parse username from specific section (without quotes)
+                                                                                       // Format: ":[user]!"
+                                                                                       // Get user's message
+                        intIndexParseSign = message.IndexOf(" :");
+                        message = message.Substring(intIndexParseSign + 2);
 
-                        OnMessage(this, new TwitchChatMessage
+                        //Console.WriteLine(message); // Print parsed irc message (debugging only)
+
+                        // General commands anyone can use
+                        if (message.Equals("!hello"))
                         {
-                            Message = message,
-                            Sender = username,
-                            Channel = channel
-                        });
+                            IrcClient.SendPublicChatMessage("Hello World!");
+                        }
                     }
                 }
             }
+        }
+        private MySqlConnection GetConnection()
+        {
+            return new MySqlConnection(ConnectionString);
+        }
 
-            public async Task SendMessage(string channel, string message)
-            {
-                await connected.Task;
-                await streamWriter.WriteLineAsync($"PRIVMSG #{channel} :{message}");
-            }
+        private List<ForbiddenWord> FindForbiddenWords()
+        {
+            List<ForbiddenWord> list = new List<ForbiddenWord>();
+            return list;
+        }
 
-            public async Task JoinChannel(string channel)
+        private class ForbiddenWord
+        {
+            public long StreamerId { get;}
+            public string forbiddenWord { get; set; }
+            ForbiddenWord(long streamerId, string forbiddenWord)
             {
-                await connected.Task;
-                await streamWriter.WriteLineAsync($"JOIN #{channel}");
-            }
-
-            //Outside of start we need to define ValidateServerCertificate
-            private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-            {
-                return sslPolicyErrors == SslPolicyErrors.None;
+                this.StreamerId = streamerId;
+                this.forbiddenWord = forbiddenWord;
             }
         }
     }
-
 }

@@ -79,20 +79,5 @@ namespace TwitchChatBot.Service
             // expires_in : int
             return user;
         }
-
-        public void GetUsers(string accessToken)
-        {
-            string url = "https://api.twitch.tv/helix/users";
-            var client = new WebClient();
-            client.Headers.Add("Authorization", $"Bearer {accessToken}");
-            client.Headers.Add("Client-Id", "jjvh028bmtssj5x8fov8lu3snk3wut");
-            var response = client.DownloadString(url);
-
-            // client_id : string
-            // login : string
-            // scope : string[] 
-            // user_id : long(오는건 string인거 같은데)
-            // expires_in : int
-        }
     }
 }
