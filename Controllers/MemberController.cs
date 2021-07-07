@@ -13,7 +13,7 @@ namespace TwitchChatBot.Controllers
     {
 
         private readonly MemberService MemberService;
-        private ThreadExecutorService ThreadExecutorService;
+        private readonly ThreadExecutorService ThreadExecutorService;
 
         public MemberController(MemberService service, ThreadExecutorService teservice)
         {
@@ -25,23 +25,22 @@ namespace TwitchChatBot.Controllers
         /// Member View로 이동하는 GET 메소드
         /// </summary>
         /// <param name="code"></param>
-        /// <param name="scope"></param>
         /// <returns></returns>
         [HttpGet, Route("/member/index")]
-        public IActionResult Index(string code, string[] scope)
+        public IActionResult Index(string code)
         {
             if (string.IsNullOrWhiteSpace(code))
             {
-                return Redirect("https://id.twitch.tv/oauth2/authorize?client_id=jjvh028bmtssj5x8fov8lu3snk3wut&redirect_uri=https://localhost:44348/member/index&response_type=code&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email");
+                string url = MemberService.GetRedirectURL();
+                return Redirect(url);
             }
-            Tuple<TwitchToken, User> tuple = MemberService.ConnectReleasesWebClient(code, "https://localhost:44348/member/index");
+            Tuple<TwitchToken, User> tuple = MemberService.ConnectReleasesWebClient(code);
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
                 Response.Cookies.Append("access_token", tuple.Item1.AccessToken);
                 Response.Cookies.Append("user_id", tuple.Item2.UserId);
             }
-
 
             return RedirectToAction("Index", "Home");
         }
@@ -53,7 +52,6 @@ namespace TwitchChatBot.Controllers
         [HttpGet, Route("/member/startbot")]
         public IActionResult StartBot()
         {
-
             return View();
         }
 
@@ -63,16 +61,12 @@ namespace TwitchChatBot.Controllers
         /// <param name="msg"></param>
         /// <returns></returns>
         [HttpPost, Route("/member/startbot")]
-        public IActionResult StartBot(string msg)
+        public IActionResult StartBot(string msg = "jongwoonlee")
         {
-            //string channelName = "jongwoonlee";
             var Token = Request.Cookies["access_token"];
-            //_stbservice.StartBot(msg, token);
 
-            string Ip = "irc.chat.twitch.tv";
-            int Port = 6667;
-            ThreadExecutorService.RegisterBot(101, Ip, Port, "simple_irc_bot", "oauth:" + Token, "jongwoonlee");
-            ThreadExecutorService.RegisterBot(102, Ip, Port, "simple_irc_bot", "oauth:" + Token, "mbnv262");
+            ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "oauth:" + Token, "jongwoonlee");
+            ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "oauth:" + Token, "mbnv262");
 
             return RedirectToAction("Index", "Home");
         }

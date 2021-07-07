@@ -25,7 +25,7 @@ namespace TwitchChatBot
         public void ConfigureServices(IServiceCollection services)
         {
             var connectionString = Configuration.GetConnectionString("DefaultConnection");
-            services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(connectionString, Configuration.GetValue<string>("Client_Secret"))));
+            services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(connectionString,Configuration.GetConnectionString("DefaultIP"), Configuration.GetValue<string>("Client_Secret"))));
             services.Add(new ServiceDescriptor(typeof(ThreadExecutorService), new ThreadExecutorService(connectionString)));
 
             services.AddControllersWithViews();

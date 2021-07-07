@@ -8,6 +8,8 @@ namespace TwitchChatBot.Service
 {
     public class ThreadExecutorService
     {
+        private const string Ip = "irc.chat.twitch.tv";
+        private const int Port = 6667;
         public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
         public string ConnectionString { get; set; }
 
@@ -86,9 +88,9 @@ namespace TwitchChatBot.Service
             }
         }
 
-        public void RegisterBot(long id , string ip, int port, string userName, string password, string channel)
+        public void RegisterBot(long id , string userName, string password, string channel)
         {
-            var ircClient =  new IrcClient(ip, port, userName, password, channel);
+            var ircClient =  new IrcClient(Ip, Port, userName, password, channel);
 
             ManagedBot.Add(id, new SimpleTwitchBot(
                 ircClient,
