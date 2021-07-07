@@ -40,7 +40,7 @@ namespace TwitchChatBot.Service
                         while (reader.Read())
                         {
                             ManagedBot.Add(1,
-                                new IrcThreadPingMixture(null,null,null)
+                                new IrcThreadPingMixture(null,null,null,null)
                             ); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                             //StartBot();
                         }
@@ -86,15 +86,16 @@ namespace TwitchChatBot.Service
             }
         }
 
-        public void RegisterBot(string ip, int port, string userName, string password, string channel)
+        public void RegisterBot(int key, string ip, int port, string userName, string password, string channel)
         {
             var ircClient =  new IrcClient(ip, port, userName, password, channel);
 
-            ManagedBot.Add(101, new IrcThreadPingMixture(
+            ManagedBot.Add(key, new IrcThreadPingMixture(
                 ircClient,
                 new PingSender(ircClient),
-                this.Commands
-                )) ;
+                this.Commands,
+                this.ConnectionString
+                ));
         }
     }
 }

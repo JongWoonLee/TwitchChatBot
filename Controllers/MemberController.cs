@@ -35,9 +35,10 @@ namespace TwitchChatBot.Controllers
         {
             if(string.IsNullOrEmpty(code))
             {
-                return Redirect("https://id.twitch.tv/oauth2/authorize?client_id=jjvh028bmtssj5x8fov8lu3snk3wut&redirect_uri=https://localhost:44348/member/index&response_type=code&scope=chat:edit chat:read");
+                return Redirect("https://id.twitch.tv/oauth2/authorize?client_id=jjvh028bmtssj5x8fov8lu3snk3wut&redirect_uri=https://localhost:44348/member/index&response_type=code&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email");
             }
             Tuple<TwitchToken,User> tuple = _service.ConnectReleasesWebClient(code, "https://localhost:44348/member/index");
+            _service.GetUsers(tuple.Item1.AccessToken);
 
             if(Request.Cookies["user_id"] == null)
             {
@@ -65,7 +66,8 @@ namespace TwitchChatBot.Controllers
 
             string ip = "irc.chat.twitch.tv";
             int port = 6667;
-            _teservice.RegisterBot(ip,port,"jongwoonlee",token, "jongwoonlee");
+            _teservice.RegisterBot(101,ip,port, "simple_irc_bot", "oauth:"+token, "jongwoonlee");
+            _teservice.RegisterBot(102,ip,port, "simple_irc_bot", "oauth:"+token, "mbnv262");
 
             return RedirectToAction("Index", "Home");
         }
