@@ -74,8 +74,8 @@ namespace TwitchChatBot.Controllers
         [HttpPost, Route("/member/startbot")]
         public IActionResult StartBot(string msg = "jongwoonlee")
         {
-            string userId = Request.Cookies["user_id"];
-            long lUserId = Convert.ToInt64(userId);
+            //string userId = Request.Cookies["user_id"];
+            //long lUserId = Convert.ToInt64(userId);
 
             ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "jongwoonlee");
             ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "mbnv262");

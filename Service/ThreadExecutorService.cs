@@ -2,7 +2,9 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
+using System.Text;
 using System.Threading;
 using TwitchChatBot.Models;
 
@@ -12,8 +14,12 @@ namespace TwitchChatBot.Service
     {
         private const string Ip = "irc.chat.twitch.tv";
         private const int Port = 6667;
+        private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
+        public string ClientSecret { get; set; }
         private const long BotId = 702431058;
-        public string Password { private get; set; } 
+        public string Password { private get; set; }
+
+        private TwitchToken BotToken;
         public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
         public string ConnectionString { get; set; }
 
@@ -35,11 +41,13 @@ namespace TwitchChatBot.Service
         //}
 
 
-        public ThreadExecutorService(string connectionString)
+        public ThreadExecutorService(string connectionString, string clientSecret)
         {
-            this.Password = "oauth:9e3t2x7nsqlnrmfe5f4wmeq4mjxyvm";
-            this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.ConnectionString = connectionString;
+            this.ClientSecret = clientSecret;
+            this.BotToken = ValidateAccessToken(FindBotInfo());
+            this.Password = BotToken.AccessToken; // 사실상 BotToken 이 있으면 없어도 되긴함;
+            this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.Commands = FindCommands();
             Initialize();
         }
@@ -60,7 +68,7 @@ namespace TwitchChatBot.Service
                             var streamerId = Convert.ToInt64(reader["streamer_id"]);
                             var channel = reader["channel_name"].ToString();
                             var password = Password;
-                            var ircClient = new IrcClient(Ip, Port, channel, password, channel);
+                            IrcClient ircClient = ConstructIrcCleint(channel, "oauth:" + password);
                             ManagedBot.Add(streamerId, new SimpleTwitchBot(
                                 ircClient,
                                 new PingSender(ircClient),
@@ -77,6 +85,11 @@ namespace TwitchChatBot.Service
                 }
                 conn.Close();
             }
+        }
+
+        private IrcClient ConstructIrcCleint(string channel, string password)
+        {
+            return new IrcClient(Ip, Port, channel, password, channel);
         }
 
         private List<Command> FindCommands()
@@ -110,17 +123,33 @@ namespace TwitchChatBot.Service
             }
         }
 
+        public TwitchToken ValidateAccessToken(Streamer streamer)
+        {
+            string url = "https://id.twitch.tv/oauth2/token";
+            var client = new WebClient();
+            var data = new NameValueCollection();
+            data["grant_type"] = "refresh_token";
+            data["client_id"] = ClientId;
+            data["client_secret"] = this.ClientSecret;
+            data["refresh_token"] = streamer.RefreshToken;
+
+            var response = client.UploadValues(url, "POST", data);
+            string str = Encoding.Default.GetString(response);
+            TwitchToken twitchToken = JsonConvert.DeserializeObject<TwitchToken>(str);
+
+            return twitchToken;
+        }
+
         private Streamer FindBotInfo()
         {
             Streamer streamer = new Streamer();
-            string SQL = @"SELECT * FROM streamer where user_id = {@BotId};";
+            string SQL = $"SELECT * FROM streamer where streamer_id = {BotId};";
             using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
                 {
                     conn.Open();
                     MySqlCommand cmd = new MySqlCommand(SQL, conn);
-                    cmd.Parameters.AddWithValue("@BotId", BotId);
                     using (var reader = cmd.ExecuteReader()) // Query 실행 결과를 읽어오는 ExecuteReader
                     {
                         while (reader.Read())
@@ -144,7 +173,7 @@ namespace TwitchChatBot.Service
 
         public void RegisterBot(long id , string userName, string channel)
         {
-            var ircClient =  new IrcClient(Ip, Port, userName, Password, channel);
+            var ircClient =  new IrcClient(Ip, Port, userName, "oauth:"+Password, channel);
                 ManagedBot.Add(id, new SimpleTwitchBot(
                 ircClient,
                 new PingSender(ircClient),

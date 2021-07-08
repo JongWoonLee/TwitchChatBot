@@ -25,11 +25,11 @@ namespace TwitchChatBot
         public void ConfigureServices(IServiceCollection services)
         {
             var connectionString = Configuration.GetConnectionString("DefaultConnection");
-            services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(connectionString,Configuration.GetConnectionString("DefaultIP"), Configuration.GetValue<string>("Client_Secret"))));
-            services.Add(new ServiceDescriptor(typeof(ThreadExecutorService), new ThreadExecutorService(connectionString)));
+            var clientSecret = Configuration.GetValue<string>("Client_Secret");
+            services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(connectionString,Configuration.GetConnectionString("DefaultIP"), clientSecret)));
+            services.Add(new ServiceDescriptor(typeof(ThreadExecutorService), new ThreadExecutorService(connectionString, clientSecret)));
 
             services.AddControllersWithViews();
-            Console.WriteLine(Configuration.GetValue<string>("Client_Secret"));
         } 
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
