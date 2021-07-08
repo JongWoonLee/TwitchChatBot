@@ -34,12 +34,13 @@ namespace TwitchChatBot.Controllers
                 string url = MemberService.GetRedirectURL();
                 return Redirect(url);
             }
-            Tuple<TwitchToken, User> tuple = MemberService.ConnectReleasesWebClient(code);
-
+            TwitchToken twitchToken = MemberService.ConnectReleasesWebClient(code);
+            User user = MemberService.ValidatingRequests(twitchToken.AccessToken);
+            int insertMember = MemberService.Insert(twitchToken,user);
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
-                Response.Cookies.Append("access_token", tuple.Item1.AccessToken);
-                Response.Cookies.Append("user_id", tuple.Item2.UserId);
+                Response.Cookies.Append("access_token", twitchToken.AccessToken);
+                Response.Cookies.Append("user_id", Convert.ToString(user.UserId));
             }
 
             return RedirectToAction("Index", "Home");

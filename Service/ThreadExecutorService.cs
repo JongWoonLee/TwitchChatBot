@@ -41,10 +41,16 @@ namespace TwitchChatBot.Service
                     {
                         while (reader.Read())
                         {
-                            ManagedBot.Add(1,
-                                new SimpleTwitchBot(null,null,null,ConnectionString)
-                            ); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
-                            //StartBot();
+                            var streamerId = Convert.ToInt64(reader["streamer_id"]);
+                            var channel = reader["channel_name"].ToString();
+                            var password = "oauth:wslfny0cklerz9gswv3hz4ux6tjxby";
+                            var ircClient = new IrcClient(Ip, Port, channel, password, channel);
+                            ManagedBot.Add(streamerId, new SimpleTwitchBot(
+                                ircClient,
+                                new PingSender(ircClient),
+                                this.Commands,
+                                ConnectionString
+                                )); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                         }
                     }
                 }

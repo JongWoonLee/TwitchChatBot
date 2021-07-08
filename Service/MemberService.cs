@@ -33,7 +33,7 @@ namespace TwitchChatBot.Service
             return new MySqlConnection(ConnectionString);
         }
 
-        public Tuple<TwitchToken, User> ConnectReleasesWebClient(string code)
+        public TwitchToken ConnectReleasesWebClient(string code)
         {
             string url = "https://id.twitch.tv/oauth2/token";
             var client = new WebClient();
@@ -46,12 +46,9 @@ namespace TwitchChatBot.Service
             data["code"] = code;
 
             var response = client.UploadValues(url, "POST", data);
-
             string str = Encoding.Default.GetString(response);
             TwitchToken twitchToken = JsonConvert.DeserializeObject<TwitchToken>(str);
-            User user = ValidatingRequests(twitchToken.AccessToken);
-
-            return new Tuple<TwitchToken, User>(twitchToken, user);
+            return twitchToken;
         }
 
 
@@ -62,7 +59,6 @@ namespace TwitchChatBot.Service
             var client = new WebClient();
             client.Headers.Add("Authorization", $"Bearer {accessToken}");
             var response = client.DownloadString(url);
-
             User user = JsonConvert.DeserializeObject<User>(response);
             
             // client_id : string
@@ -80,6 +76,39 @@ namespace TwitchChatBot.Service
             string redirecUri = $"https://{DefaultIP}/member/index";
             string responseType = "code";
             return $"{url}?client_id={clientId}&redirect_uri={redirecUri}&response_type={responseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
+        }
+
+        public int Insert(TwitchToken twitchToken, User user)
+        {
+            var result = 0;
+            string SQL = $"INSERT INTO streamer(streamer_id,channel_name,refresh_token) VALUES(@StreamerId, @ChannelName, @RefreshToken);";
+            using (MySqlConnection conn = GetConnection())
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
+                    cmd.Parameters.AddWithValue("@StreamerId", user.UserId);
+                    cmd.Parameters.AddWithValue("@ChannelName", user.Login);
+                    cmd.Parameters.AddWithValue("@RefreshToken", twitchToken.RefreshToken);
+                    result = cmd.ExecuteNonQuery();
+                    if (result == 1)
+                    {
+                        Console.WriteLine("Insert Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Insert Fail!!");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                conn.Close();
+                return result;
+            }
         }
     }
 }
