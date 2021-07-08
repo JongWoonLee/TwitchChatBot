@@ -22,7 +22,11 @@ namespace TwitchChatBot.Controllers
         }
 
         /// <summary>
-        /// Member View로 이동하는 GET 메소드
+        /// Twitch Login 을 하는 GET 메소드.
+        /// code 가 없으면 코드를 가져오는 요청을 하고
+        /// code 가 있으면 Token을 가지고 온 뒤
+        /// Token 을 이용해서 User data를 얻어오고
+        /// Streamer Table 에 Insert를 한다.
         /// </summary>
         /// <param name="code"></param>
         /// <returns></returns>
@@ -37,8 +41,10 @@ namespace TwitchChatBot.Controllers
             TwitchToken twitchToken = MemberService.ConnectReleasesWebClient(code);
             User user = MemberService.ValidatingRequests(twitchToken.AccessToken);
             int insertMember = MemberService.Insert(twitchToken,user);
+
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
+
                 Response.Cookies.Append("access_token", twitchToken.AccessToken);
                 Response.Cookies.Append("user_id", Convert.ToString(user.UserId));
             }
@@ -53,6 +59,10 @@ namespace TwitchChatBot.Controllers
         [HttpGet, Route("/member/startbot")]
         public IActionResult StartBot()
         {
+            //string userId = Request.Cookies["user_id"];
+            //string userId = "704190345";
+            //int result = MemberService.FindBotInUseByUserId(userId);
+            //ViewData["result"] = result;
             return View();
         }
 
@@ -64,10 +74,11 @@ namespace TwitchChatBot.Controllers
         [HttpPost, Route("/member/startbot")]
         public IActionResult StartBot(string msg = "jongwoonlee")
         {
-            var Token = Request.Cookies["access_token"];
+            string userId = Request.Cookies["user_id"];
+            long lUserId = Convert.ToInt64(userId);
 
-            ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "oauth:" + Token, "jongwoonlee");
-            ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "oauth:" + Token, "mbnv262");
+            ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "jongwoonlee");
+            ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "mbnv262");
 
             return RedirectToAction("Index", "Home");
         }

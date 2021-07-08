@@ -69,6 +69,23 @@ namespace TwitchChatBot.Service
             return user;
         }
 
+        public TwitchToken ValidateAccessToken(Streamer streamer)
+        {
+            string url = "https://id.twitch.tv/oauth2/authorize";
+            var client = new WebClient();
+            var data = new NameValueCollection();
+            data["grant_type"] = "refresh_token";
+            data["client_id"] = ClientId;
+            data["client_secret"] = this.ClientSecret;
+            data["refresh_token"] = streamer.RefreshToken;
+
+            var response = client.UploadValues(url, "POST", data);
+            string str = Encoding.Default.GetString(response);
+            TwitchToken twitchToken = JsonConvert.DeserializeObject<TwitchToken>(str);
+
+            return twitchToken;
+        }
+
         public string GetRedirectURL()
         {
             string url = "https://id.twitch.tv/oauth2/authorize";
@@ -101,7 +118,31 @@ namespace TwitchChatBot.Service
                         Console.WriteLine("Insert Fail!!");
                     }
                 }
-                catch (Exception e)
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                conn.Close();
+                return result;
+            }
+        }
+
+        public int FindBotInUseByUserId(string userId)
+        {
+            long streamerId = Convert.ToInt64(userId);
+            int result = 0;
+            string SQL = "SELECT bot_in_use FROM streamer_detail where streamer_id = {@StreamerId};";
+            using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
+            {
+                try
+                {
+                    conn.Open();
+                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
+                    cmd.Parameters.AddWithValue("@StreamerId", streamerId);
+                    result = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
                     Console.WriteLine(e.ToString());
