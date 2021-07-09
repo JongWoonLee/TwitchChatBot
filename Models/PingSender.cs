@@ -11,13 +11,13 @@ namespace TwitchChatBot
 {
     public class PingSender
     {
-        private IrcClient ircClient;
+        private IrcClient IrcClient;
         private Thread pingSender;
 
         // Empty constructor makes instance of Thread
         public PingSender(IrcClient ircClient)
         {
-            this.ircClient = ircClient;
+            this.IrcClient = ircClient;
             pingSender = new Thread(new ThreadStart(this.Run));
             Start();
         }
@@ -34,8 +34,16 @@ namespace TwitchChatBot
         {
             while (true)
             {
-                ircClient.SendIrcMessage("PING irc.twitch.tv");
-                Thread.Sleep(60000); // 1 minutes
+                try
+                {
+                    IrcClient.SendIrcMessage("PING irc.twitch.tv");
+                    Thread.Sleep(60000); // 1 minutes
+                }
+                catch (ThreadInterruptedException e)
+                {
+                    Console.WriteLine(e.Message);
+                    Console.WriteLine("newThread inturrupted");
+                }
             }
         }
     }

@@ -40,13 +40,13 @@ namespace TwitchChatBot.Controllers
             }
             TwitchToken twitchToken = MemberService.ConnectReleasesWebClient(code);
             User user = MemberService.ValidatingRequests(twitchToken.AccessToken);
-            int insertMember = MemberService.Insert(twitchToken,user);
+            int insertMember = MemberService.Insert(twitchToken, user);
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
-
                 Response.Cookies.Append("access_token", twitchToken.AccessToken);
                 Response.Cookies.Append("user_id", Convert.ToString(user.UserId));
+                Response.Cookies.Append("channel_name", user.Login);
             }
 
             return RedirectToAction("Index", "Home");
@@ -76,13 +76,15 @@ namespace TwitchChatBot.Controllers
         {
             //string userId = Request.Cookies["user_id"];
             //long lUserId = Convert.ToInt64(userId);
+            //string channelName = Request.Cookies["channel_name"];
+            //ThreadExecutorService.RegisterBot(IUserId, "simple_irc_bot", channelName);
 
-            ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "jongwoonlee");
+            ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "whddns262");
             ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "mbnv262");
 
             return RedirectToAction("Index", "Home");
         }
-        
+
     }
 
 
