@@ -39,6 +39,7 @@ namespace TwitchChatBot.Models
                 string Message = IrcClient.ReadMessage();
                 Console.WriteLine(Message); // Print raw irc messages
                 //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
+                if (!string.IsNullOrWhiteSpace(message))
                 if (!string.IsNullOrWhiteSpace(Message))
                 {
                     if (Message.Contains("PRIVMSG"))
