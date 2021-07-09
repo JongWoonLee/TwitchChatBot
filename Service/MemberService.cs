@@ -18,7 +18,7 @@ namespace TwitchChatBot.Service
         private string ClientSecret { get; set; }
         private string ConnectionString { get; set; }
 
-        public MemberService(string connectionString,string defaultIP, string clientSecret)
+        public MemberService(string connectionString, string defaultIP, string clientSecret)
         {
             this.ConnectionString = connectionString;
             this.DefaultIP = defaultIP;
@@ -60,7 +60,7 @@ namespace TwitchChatBot.Service
             client.Headers.Add("Authorization", $"Bearer {accessToken}");
             var response = client.DownloadString(url);
             User user = JsonConvert.DeserializeObject<User>(response);
-            
+
             // client_id : string
             // login : string
             // scope : string[] 
@@ -95,7 +95,7 @@ namespace TwitchChatBot.Service
             return $"{url}?client_id={clientId}&redirect_uri={redirecUri}&response_type={responseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
         }
 
-        public int Insert(TwitchToken twitchToken, User user)
+        public int InsertStreamer(TwitchToken twitchToken, User user)
         {
             var result = 0;
             string SQL = $"INSERT INTO streamer(streamer_id,channel_name,refresh_token) VALUES(@StreamerId, @ChannelName, @RefreshToken);";
@@ -112,6 +112,7 @@ namespace TwitchChatBot.Service
                     if (result == 1)
                     {
                         Console.WriteLine("Insert Success");
+                        InsertStreamerDetail(conn, FindLastInsertKey(conn));
                     }
                     else
                     {
@@ -127,6 +128,35 @@ namespace TwitchChatBot.Service
                 return result;
             }
         }
+
+        private long FindLastInsertKey(MySqlConnection conn)
+        {
+            long lastInsertKey = 0;
+            string SQL = "SELECT LAST_INSERT_ID() FROM streamer;"; // 이전에 실행된 query의 PK를 알아오는 Query
+            MySqlCommand cmd = new MySqlCommand(SQL, conn);
+            lastInsertKey = Convert.ToInt64(cmd.ExecuteScalar());
+
+            return lastInsertKey;
+        }
+
+        private int InsertStreamerDetail(MySqlConnection conn, long inheritedKey)
+        {
+            var result = 0;
+            string SQL = $"INSERT INTO streamer_detail(streamer_id) VALUES(@StreamerId);";
+            MySqlCommand cmd = new MySqlCommand(SQL, conn);
+            cmd.Parameters.AddWithValue("@StreamerId", inheritedKey);
+            result = cmd.ExecuteNonQuery();
+            if (result == 1)
+            {
+                Console.WriteLine("Insert Success");
+            }
+            else
+            {
+                Console.WriteLine("Insert Fail!!");
+            }
+            return result;
+        }
+
 
         public int FindBotInUseByUserId(string userId)
         {

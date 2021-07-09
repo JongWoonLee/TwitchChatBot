@@ -40,7 +40,7 @@ namespace TwitchChatBot.Controllers
             }
             TwitchToken twitchToken = MemberService.ConnectReleasesWebClient(code);
             User user = MemberService.ValidatingRequests(twitchToken.AccessToken);
-            int insertMember = MemberService.Insert(twitchToken, user);
+            int insertMember = MemberService.InsertStreamer(twitchToken, user);
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
