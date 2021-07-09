@@ -19,6 +19,7 @@ namespace TwitchChatBot
         {
             this.ircClient = ircClient;
             pingSender = new Thread(new ThreadStart(this.Run));
+            Start();
         }
 
         // Starts the thread
@@ -35,7 +36,6 @@ namespace TwitchChatBot
             {
                 ircClient.SendIrcMessage("PING irc.twitch.tv");
                 Thread.Sleep(60000); // 1 minutes
-                Thread.CurrentThread.Interrupt();
             }
         }
     }

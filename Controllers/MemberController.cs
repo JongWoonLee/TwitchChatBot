@@ -57,7 +57,7 @@ namespace TwitchChatBot.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet, Route("/member/startbot")]
-        public IActionResult StartBot()
+        public IActionResult StartBot() // 로그인한 유저가 봇 사용중인지 확인하는 작업 요망.. 아마 처음 insert할때 같이 Insert해야 할듯함
         {
             //string userId = Request.Cookies["user_id"];
             //string userId = "704190345";

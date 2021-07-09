@@ -14,9 +14,9 @@ namespace TwitchChatBot.Service
     public class MemberService
     {
         private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
-        public string DefaultIP { get; set; }
-        public string ClientSecret { get; set; }
-        public string ConnectionString { get; set; }
+        private string DefaultIP { get; set; }
+        private string ClientSecret { get; set; }
+        private string ConnectionString { get; set; }
 
         public MemberService(string connectionString,string defaultIP, string clientSecret)
         {

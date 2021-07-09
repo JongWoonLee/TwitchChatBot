@@ -12,16 +12,17 @@ namespace TwitchChatBot.Service
 {
     public class ThreadExecutorService
     {
+        private Thread BotTokenRefresher;
         private const string Ip = "irc.chat.twitch.tv";
         private const int Port = 6667;
         private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
-        public string ClientSecret { get; set; }
-        private const long BotId = 702431058;
-        public string Password { private get; set; }
+        private string ClientSecret { get; set; }
+        private const long BotId = 702431058; // 테이블로 빼자 따로
+        private string Password { get; set; }
 
         private TwitchToken BotToken;
         public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
-        public string ConnectionString { get; set; }
+        private string ConnectionString { get; set; }
 
         private List<Command> Commands;
 
@@ -34,7 +35,7 @@ namespace TwitchChatBot.Service
         //public Scheduler()
         //{
         //    TwitchToken twitchToken = new TwitchToken();
-        //    if(twitchToken.ExpiresIn < 10000)
+        //    if(twitchToken.ExpiresIn < 10000) // expires 는 초임
         //    {
         //        ValidateAccessToken();
         //    }
@@ -46,10 +47,12 @@ namespace TwitchChatBot.Service
             this.ConnectionString = connectionString;
             this.ClientSecret = clientSecret;
             this.BotToken = ValidateAccessToken(FindBotInfo());
-            this.Password = BotToken.AccessToken; // 사실상 BotToken 이 있으면 없어도 되긴함;
+            this.Password = BotToken.AccessToken; // 나중에 Bot Table 따로 빼고 BotInfo 에서 refreshToken 가져오면 그때 빼자
             this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.Commands = FindCommands();
             Initialize();
+            this.BotTokenRefresher = new Thread(new ThreadStart(this.Run));
+            Start();
         }
 
         private void Initialize()
@@ -180,6 +183,22 @@ namespace TwitchChatBot.Service
                 this.Commands,
                 ConnectionString
                 ));
+        }
+
+        public void Start()
+        {
+            BotTokenRefresher.IsBackground = true;
+            BotTokenRefresher.Start();
+        }
+
+        // 한시간에 한번씩 Token Validate 하기
+        public void Run()
+        {
+            while (true)
+            {
+                //ValidateAccessToken(BotToken); Streamer가 아니라 RefreshToken으로 변경하자
+                Thread.Sleep(3600000); // 1 시간
+            }
         }
     }
 }
