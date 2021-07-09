@@ -16,53 +16,53 @@ namespace TwitchChatBot.Models
         private StreamReader InputStream;
         private StreamWriter OutputStream;
 
-        public IrcClient(string ip, int port, string userName, string password, string channel)
+        public IrcClient(string Ip, int Port, string UserName, string Password, string Channel)
         {
             try
             {
-                this.UserName = userName;
-                this.Channel = channel;
+                this.UserName = UserName;
+                this.Channel = Channel;
 
-                TcpClient = new TcpClient(ip, port);
+                TcpClient = new TcpClient(Ip, Port);
                 InputStream = new StreamReader(TcpClient.GetStream());
                 OutputStream = new StreamWriter(TcpClient.GetStream());
 
                 // Try to join the room
-                OutputStream.WriteLine("PASS " + password);
-                OutputStream.WriteLine("NICK " + userName);
-                OutputStream.WriteLine("USER " + userName + " 8 * :" + userName);
-                OutputStream.WriteLine("JOIN #" + channel);
+                OutputStream.WriteLine("PASS " + Password);
+                OutputStream.WriteLine("NICK " + UserName);
+                OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName);
+                OutputStream.WriteLine("JOIN #" + Channel);
                 OutputStream.Flush();
             }
-            catch (Exception e)
+            catch (Exception E)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(E.Message);
             }
         }
 
-        public void SendIrcMessage(string message)
+        public void SendIrcMessage(string Message)
         {
             try
             {
-                OutputStream.WriteLine(message);
+                OutputStream.WriteLine(Message);
                 OutputStream.Flush();
             }
-            catch (Exception e)
+            catch (Exception E)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(E.Message);
             }
         }
 
-        public void SendPublicChatMessage(string message)
+        public void SendPublicChatMessage(string Message)
         {
             try
             {
                 SendIrcMessage(":" + UserName + "!" + UserName + "@" + UserName +
-                ".tmi.twitch.tv PRIVMSG #" + Channel + " :" + message);
+                ".tmi.twitch.tv PRIVMSG #" + Channel + " :" + Message);
             }
-            catch (Exception e)
+            catch (Exception E)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(E.Message);
             }
         }
 
@@ -70,12 +70,12 @@ namespace TwitchChatBot.Models
         {
             try
             {
-                string message = InputStream.ReadLine();
-                return message;
+                string Message = InputStream.ReadLine();
+                return Message;
             }
-            catch (Exception e)
+            catch (Exception E)
             {
-                return "Error receiving message: " + e.Message;
+                return "Error receiving message: " + E.Message;
             }
         }
     }

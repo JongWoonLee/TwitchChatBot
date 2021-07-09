@@ -18,11 +18,11 @@ namespace TwitchChatBot.Service
         private string ClientSecret { get; set; }
         private string ConnectionString { get; set; }
 
-        public MemberService(string connectionString, string defaultIP, string clientSecret)
+        public MemberService(string ConnectionString, string DefaultIP, string ClientSecret)
         {
-            this.ConnectionString = connectionString;
-            this.DefaultIP = defaultIP;
-            this.ClientSecret = clientSecret;
+            this.ConnectionString = ConnectionString;
+            this.DefaultIP = DefaultIP;
+            this.ClientSecret = ClientSecret;
         }
         public MemberService()
         {
@@ -33,120 +33,120 @@ namespace TwitchChatBot.Service
             return new MySqlConnection(ConnectionString);
         }
 
-        public TwitchToken ConnectReleasesWebClient(string code)
+        public TwitchToken ConnectReleasesWebClient(string Code)
         {
-            string url = "https://id.twitch.tv/oauth2/token";
-            var client = new WebClient();
-            var data = new NameValueCollection();
+            string Url = "https://id.twitch.tv/oauth2/token";
+            var Client = new WebClient();
+            var Data = new NameValueCollection();
 
-            data["grant_type"] = "authorization_code";
-            data["client_id"] = ClientId;
-            data["client_secret"] = this.ClientSecret;
-            data["redirect_uri"] = $"https://{DefaultIP}/member/index"; ;
-            data["code"] = code;
+            Data["grant_type"] = "authorization_code";
+            Data["client_id"] = ClientId;
+            Data["client_secret"] = this.ClientSecret;
+            Data["redirect_uri"] = $"https://{DefaultIP}/member/index"; ;
+            Data["code"] = Code;
 
-            var response = client.UploadValues(url, "POST", data);
-            string str = Encoding.Default.GetString(response);
-            TwitchToken twitchToken = JsonConvert.DeserializeObject<TwitchToken>(str);
-            return twitchToken;
+            var Response = Client.UploadValues(Url, "POST", Data);
+            string Str = Encoding.Default.GetString(Response);
+            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+            return TwitchToken;
         }
 
 
 
-        public User ValidatingRequests(string accessToken)
+        public User ValidatingRequests(string AccessToken)
         {
-            string url = "https://id.twitch.tv/oauth2/validate";
-            var client = new WebClient();
-            client.Headers.Add("Authorization", $"Bearer {accessToken}");
-            var response = client.DownloadString(url);
-            User user = JsonConvert.DeserializeObject<User>(response);
+            string Url = "https://id.twitch.tv/oauth2/validate";
+            var Client = new WebClient();
+            Client.Headers.Add("Authorization", $"Bearer {AccessToken}");
+            var Response = Client.DownloadString(Url);
+            User User = JsonConvert.DeserializeObject<User>(Response);
 
             // client_id : string
             // login : string
             // scope : string[] 
             // user_id : long(오는건 string인거 같은데)
             // expires_in : int
-            return user;
+            return User;
         }
 
-        public TwitchToken ValidateAccessToken(Streamer streamer)
+        public TwitchToken ValidateAccessToken(Streamer Streamer)
         {
-            string url = "https://id.twitch.tv/oauth2/authorize";
-            var client = new WebClient();
-            var data = new NameValueCollection();
-            data["grant_type"] = "refresh_token";
-            data["client_id"] = ClientId;
-            data["client_secret"] = this.ClientSecret;
-            data["refresh_token"] = streamer.RefreshToken;
+            string Url = "https://id.twitch.tv/oauth2/authorize";
+            var Client = new WebClient();
+            var Data = new NameValueCollection();
+            Data["grant_type"] = "refresh_token";
+            Data["client_id"] = ClientId;
+            Data["client_secret"] = this.ClientSecret;
+            Data["refresh_token"] = Streamer.RefreshToken;
 
-            var response = client.UploadValues(url, "POST", data);
-            string str = Encoding.Default.GetString(response);
-            TwitchToken twitchToken = JsonConvert.DeserializeObject<TwitchToken>(str);
+            var Response = Client.UploadValues(Url, "POST", Data);
+            string Str = Encoding.Default.GetString(Response);
+            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
 
-            return twitchToken;
+            return TwitchToken;
         }
 
         public string GetRedirectURL()
         {
-            string url = "https://id.twitch.tv/oauth2/authorize";
-            string clientId = ClientId;
-            string redirecUri = $"https://{DefaultIP}/member/index";
-            string responseType = "code";
-            return $"{url}?client_id={clientId}&redirect_uri={redirecUri}&response_type={responseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
+            string Url = "https://id.twitch.tv/oauth2/authorize";
+            string ClientId = MemberService.ClientId;
+            string RedirectUri = $"https://{DefaultIP}/member/index";
+            string ResponseType = "code";
+            return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
         }
 
-        public int InsertStreamer(TwitchToken twitchToken, User user)
+        public int InsertStreamer(TwitchToken TwitchToken, User User)
         {
-            var result = 0;
+            var Result = 0;
             string SQL = $"INSERT INTO streamer(streamer_id,channel_name,refresh_token) VALUES(@StreamerId, @ChannelName, @RefreshToken);";
-            using (MySqlConnection conn = GetConnection())
+            using (MySqlConnection Conn = GetConnection())
             {
                 try
                 {
-                    conn.Open();
-                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
-                    cmd.Parameters.AddWithValue("@StreamerId", user.UserId);
-                    cmd.Parameters.AddWithValue("@ChannelName", user.Login);
-                    cmd.Parameters.AddWithValue("@RefreshToken", twitchToken.RefreshToken);
-                    result = cmd.ExecuteNonQuery();
-                    if (result == 1)
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@StreamerId", User.UserId);
+                    Cmd.Parameters.AddWithValue("@ChannelName", User.Login);
+                    Cmd.Parameters.AddWithValue("@RefreshToken", TwitchToken.RefreshToken);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
                     {
                         Console.WriteLine("Insert Success");
-                        InsertStreamerDetail(conn, FindLastInsertKey(conn));
+                        InsertStreamerDetail(Conn, FindLastInsertKey(Conn));
                     }
                     else
                     {
                         Console.WriteLine("Insert Fail!!");
                     }
                 }
-                catch (MySqlException e)
+                catch (MySqlException E)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine(E.ToString());
                 }
-                conn.Close();
-                return result;
+                Conn.Close();
+                return Result;
             }
         }
 
-        private long FindLastInsertKey(MySqlConnection conn)
+        private long FindLastInsertKey(MySqlConnection Conn)
         {
-            long lastInsertKey = 0;
+            long LastInsertKey = 0;
             string SQL = "SELECT LAST_INSERT_ID() FROM streamer;"; // 이전에 실행된 query의 PK를 알아오는 Query
-            MySqlCommand cmd = new MySqlCommand(SQL, conn);
-            lastInsertKey = Convert.ToInt64(cmd.ExecuteScalar());
+            MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+            LastInsertKey = Convert.ToInt64(Cmd.ExecuteScalar());
 
-            return lastInsertKey;
+            return LastInsertKey;
         }
 
-        private int InsertStreamerDetail(MySqlConnection conn, long inheritedKey)
+        private int InsertStreamerDetail(MySqlConnection Conn, long InheritedKey)
         {
-            var result = 0;
+            var Result = 0;
             string SQL = $"INSERT INTO streamer_detail(streamer_id) VALUES(@StreamerId);";
-            MySqlCommand cmd = new MySqlCommand(SQL, conn);
-            cmd.Parameters.AddWithValue("@StreamerId", inheritedKey);
-            result = cmd.ExecuteNonQuery();
-            if (result == 1)
+            MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+            Cmd.Parameters.AddWithValue("@StreamerId", InheritedKey);
+            Result = Cmd.ExecuteNonQuery();
+            if (Result == 1)
             {
                 Console.WriteLine("Insert Success");
             }
@@ -154,31 +154,31 @@ namespace TwitchChatBot.Service
             {
                 Console.WriteLine("Insert Fail!!");
             }
-            return result;
+            return Result;
         }
 
 
-        public int FindBotInUseByUserId(string userId)
+        public int FindBotInUseByUserId(string UserId)
         {
-            long streamerId = Convert.ToInt64(userId);
-            int result = 0;
+            long StreamerId = Convert.ToInt64(UserId);
+            int Result = 0;
             string SQL = "SELECT bot_in_use FROM streamer_detail where streamer_id = {@StreamerId};";
-            using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
+            using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
                 {
-                    conn.Open();
-                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
-                    cmd.Parameters.AddWithValue("@StreamerId", streamerId);
-                    result = Convert.ToInt32(cmd.ExecuteScalar());
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@StreamerId", StreamerId);
+                    Result = Convert.ToInt32(Cmd.ExecuteScalar());
                 }
-                catch (MySqlException e)
+                catch (MySqlException E)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine(E.ToString());
                 }
-                conn.Close();
-                return result;
+                Conn.Close();
+                return Result;
             }
         }
     }

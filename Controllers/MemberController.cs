@@ -15,10 +15,10 @@ namespace TwitchChatBot.Controllers
         private readonly MemberService MemberService;
         private readonly ThreadExecutorService ThreadExecutorService;
 
-        public MemberController(MemberService service, ThreadExecutorService teservice)
+        public MemberController(MemberService MemberService, ThreadExecutorService ThreadExecutorService)
         {
-            MemberService = service;
-            ThreadExecutorService = teservice;
+            this.MemberService = MemberService;
+            this.ThreadExecutorService = ThreadExecutorService;
         }
 
         /// <summary>
@@ -28,25 +28,25 @@ namespace TwitchChatBot.Controllers
         /// Token 을 이용해서 User data를 얻어오고
         /// Streamer Table 에 Insert를 한다.
         /// </summary>
-        /// <param name="code"></param>
+        /// <param name="Code"></param>
         /// <returns></returns>
         [HttpGet, Route("/member/index")]
-        public IActionResult Index(string code)
+        public IActionResult Index(string Code)
         {
-            if (string.IsNullOrWhiteSpace(code))
+            if (string.IsNullOrWhiteSpace(Code))
             {
                 string url = MemberService.GetRedirectURL();
                 return Redirect(url);
             }
-            TwitchToken twitchToken = MemberService.ConnectReleasesWebClient(code);
-            User user = MemberService.ValidatingRequests(twitchToken.AccessToken);
-            int insertMember = MemberService.InsertStreamer(twitchToken, user);
+            TwitchToken TwitchToken = MemberService.ConnectReleasesWebClient(Code);
+            User User = MemberService.ValidatingRequests(TwitchToken.AccessToken);
+            int InsertResult = MemberService.InsertStreamer(TwitchToken, User);
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
-                Response.Cookies.Append("access_token", twitchToken.AccessToken);
-                Response.Cookies.Append("user_id", Convert.ToString(user.UserId));
-                Response.Cookies.Append("channel_name", user.Login);
+                Response.Cookies.Append("access_token", TwitchToken.AccessToken);
+                Response.Cookies.Append("user_id", Convert.ToString(User.UserId));
+                Response.Cookies.Append("channel_name", User.Login);
             }
 
             return RedirectToAction("Index", "Home");
@@ -69,10 +69,10 @@ namespace TwitchChatBot.Controllers
         /// <summary>
         /// Member 정보를 받아 봇을 실행시키는 POST 메소드
         /// </summary>
-        /// <param name="msg"></param>
+        /// <param name="Msg"></param>
         /// <returns></returns>
         [HttpPost, Route("/member/startbot")]
-        public IActionResult StartBot(string msg = "jongwoonlee")
+        public IActionResult StartBot(string Msg = "jongwoonlee")
         {
             //string userId = Request.Cookies["user_id"];
             //long lUserId = Convert.ToInt64(userId);

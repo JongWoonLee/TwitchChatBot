@@ -18,11 +18,11 @@ namespace TwitchChatBot.Models
         public Streamer()
         {
         }
-        public Streamer(long streamerId, string channelName, string refreshToken)
+        public Streamer(long StreamerId, string ChannelName, string RefreshToken)
         {
-            this.StreamerId = streamerId;
-            this.ChannelName = channelName;
-            this.RefreshToken = refreshToken;
+            this.StreamerId = StreamerId;
+            this.ChannelName = ChannelName;
+            this.RefreshToken = RefreshToken;
         }
     }
 }

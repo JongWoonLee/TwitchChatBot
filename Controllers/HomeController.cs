@@ -11,11 +11,11 @@ namespace TwitchChatBot.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly ILogger<HomeController> Logger;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> Logger)
         {
-            _logger = logger;
+            this.Logger = Logger;
         }
 
         public IActionResult Index()

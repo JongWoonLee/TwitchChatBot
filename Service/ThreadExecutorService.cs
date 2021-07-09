@@ -30,10 +30,10 @@ namespace TwitchChatBot.Service
         }
 
 
-        public ThreadExecutorService(string connectionString, string clientSecret)
+        public ThreadExecutorService(string ConnectionString, string ClientSecret)
         {
-            this.ConnectionString = connectionString;
-            this.ClientSecret = clientSecret;
+            this.ConnectionString = ConnectionString;
+            this.ClientSecret = ClientSecret;
             this.BotToken = ValidateAccessToken(FindBotRefreshToken());
             this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.Commands = FindCommands();
@@ -45,99 +45,99 @@ namespace TwitchChatBot.Service
         private void Initialize()
         {
             string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id";
-            using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
+            using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
                 {
-                    conn.Open();
-                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
-                    using (var reader = cmd.ExecuteReader()) // Query 실행 결과를 읽어오는 ExecuteReader
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader()) // Query 실행 결과를 읽어오는 ExecuteReader
                     {
-                        while (reader.Read())
+                        while (Reader.Read())
                         {
-                            var streamerId = Convert.ToInt64(reader["streamer_id"]);
-                            var channel = reader["channel_name"].ToString();
-                            var password = BotToken.AccessToken;
-                            IrcClient ircClient = new IrcClient(Ip, Port, channel, password, channel);
-                            ManagedBot.Add(streamerId, new SimpleTwitchBot(
-                                ircClient,
-                                new PingSender(ircClient),
+                            var StreamerId = Convert.ToInt64(Reader["streamer_id"]);
+                            var Channel = Reader["channel_name"].ToString();
+                            var Password = BotToken.AccessToken;
+                            IrcClient IrcClient = new IrcClient(Ip, Port, Channel, Password, Channel);
+                            ManagedBot.Add(StreamerId, new SimpleTwitchBot(
+                                IrcClient,
+                                new PingSender(IrcClient),
                                 this.Commands,
                                 ConnectionString
                                 )); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                         }
                     }
                 }
-                catch (MySqlException e)
+                catch (MySqlException E)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine(E.ToString());
                 }
-                conn.Close();
+                Conn.Close();
             }
         }
 
 
         private List<Command> FindCommands()
         {
-            List<Command> list = new List<Command>();
+            List<Command> List = new List<Command>();
             string SQL = "SELECT * FROM command;";
-            using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
+            using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
                 {
-                    conn.Open();
-                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
-                    using (var reader = cmd.ExecuteReader()) // Query 실행 결과를 읽어오는 ExecuteReader
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader()) // Query 실행 결과를 읽어오는 ExecuteReader
                     {
-                        while (reader.Read())
+                        while (Reader.Read())
                         {
-                            list.Add(new Command(
-                                reader["command_head"].ToString(),
-                                reader["command_body"].ToString()
+                            List.Add(new Command(
+                                Reader["command_head"].ToString(),
+                                Reader["command_body"].ToString()
                             )); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                         }
                     }
                 }
-                catch (MySqlException e)
+                catch (MySqlException E)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine(E.ToString());
                 }
-                conn.Close();
-                return list;
+                Conn.Close();
+                return List;
             }
         }
 
-        public TwitchToken ValidateAccessToken(string refreshToken)
+        public TwitchToken ValidateAccessToken(string RefreshToken)
         {
-            string url = "https://id.twitch.tv/oauth2/token";
-            var client = new WebClient();
-            var data = new NameValueCollection();
-            data["grant_type"] = "refresh_token";
-            data["client_id"] = ClientId;
-            data["client_secret"] = this.ClientSecret;
-            data["refresh_token"] = refreshToken;
+            string Url = "https://id.twitch.tv/oauth2/token";
+            var Client = new WebClient();
+            var Data = new NameValueCollection();
+            Data["grant_type"] = "refresh_token";
+            Data["client_id"] = ClientId;
+            Data["client_secret"] = this.ClientSecret;
+            Data["refresh_token"] = RefreshToken;
 
-            var response = client.UploadValues(url, "POST", data);
-            string str = Encoding.Default.GetString(response);
-            TwitchToken twitchToken = JsonConvert.DeserializeObject<TwitchToken>(str);
+            var Response = Client.UploadValues(Url, "POST", Data);
+            string Str = Encoding.Default.GetString(Response);
+            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
 
-            return twitchToken;
+            return TwitchToken;
         }
 
         private string FindBotRefreshToken()
         {
-            string botToken = "";
+            string BotToken = "";
             string SQL = "SELECT s.refresh_token FROM streamer as s JOIN bot_token AS bt ON s.streamer_id = bt.streamer_id;";
-            using (MySqlConnection conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
+            using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
                 {
-                    conn.Open();
-                    MySqlCommand cmd = new MySqlCommand(SQL, conn);
-                    botToken = cmd.ExecuteScalar().ToString();
-                    if (string.IsNullOrWhiteSpace(botToken))
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    BotToken = Cmd.ExecuteScalar().ToString();
+                    if (string.IsNullOrWhiteSpace(BotToken))
                     {
                         Console.WriteLine("Bot Cannot Be Found");
                     }
@@ -146,22 +146,22 @@ namespace TwitchChatBot.Service
                         Console.WriteLine("Bot Found");
                     }
                 }
-                catch (MySqlException e)
+                catch (MySqlException E)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine(E.ToString());
                 }
-                conn.Close();
-                return botToken;
+                Conn.Close();
+                return BotToken;
             }
         }
 
-        public void RegisterBot(long id, string userName, string channel)
+        public void RegisterBot(long Id, string UserName, string Channel)
         {
-            var ircClient = new IrcClient(Ip, Port, userName, "oauth:" + BotToken.AccessToken, channel);
-            ManagedBot.Add(id, new SimpleTwitchBot(
-            ircClient,
-            new PingSender(ircClient),
+            var IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
+            ManagedBot.Add(Id, new SimpleTwitchBot(
+            IrcClient,
+            new PingSender(IrcClient),
             this.Commands,
             ConnectionString
             ));
@@ -183,9 +183,9 @@ namespace TwitchChatBot.Service
                     ValidateAccessToken(BotToken.RefreshToken);
                     Thread.Sleep(3600000); // 1 시간
                 }
-                catch (ThreadInterruptedException e)
+                catch (ThreadInterruptedException E)
                 {
-                    Console.WriteLine(e.Message);
+                    Console.WriteLine(E.Message);
                     Console.WriteLine("newThread inturrupted");
                 }
             }

@@ -10,10 +10,10 @@ namespace TwitchChatBot.Models
         public string CommandHead { get;set; }
         public string CommandBody { get; set; }
 
-        public Command(string commandHead, string commandBody)
+        public Command(string CommandHead, string CommandBody)
         {
-            CommandHead = commandHead;
-            CommandBody = commandBody;
+            this.CommandHead = CommandHead;
+            this.CommandBody = CommandBody;
         }
 
         public Command()
