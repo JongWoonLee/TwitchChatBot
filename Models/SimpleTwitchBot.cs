@@ -31,13 +31,15 @@ namespace TwitchChatBot.Models
 
         public void Run()
         {
+            IrcClient.SendPublicChatMessage("Here Comes A Connect Message");
+
             while (true)
             {
                 // Read any message from the chat room
                 string message = IrcClient.ReadMessage();
                 Console.WriteLine(message); // Print raw irc messages
                 //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                if (!string.IsNullOrEmpty(message))
+                if (!string.IsNullOrWhiteSpace(message))
                 {
                     if (message.Contains("PRIVMSG"))
                     {
@@ -58,6 +60,14 @@ namespace TwitchChatBot.Models
                         if (message.Equals("!hello"))
                         {
                             IrcClient.SendPublicChatMessage("Hello World!");
+                        }
+
+                        foreach(var e in Commands)
+                        {
+                            if(message.StartsWith(e.CommandHead))
+                            {
+                                IrcClient.SendPublicChatMessage(e.CommandBody);
+                            }
                         }
                     }
                 }
