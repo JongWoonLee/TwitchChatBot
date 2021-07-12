@@ -10,7 +10,7 @@ namespace TwitchChatBot.Models
     public class IrcClient
     {
         public string UserName;
-        private string Channel;
+        public string Channel;
 
         private TcpClient TcpClient;
         private StreamReader InputStream;

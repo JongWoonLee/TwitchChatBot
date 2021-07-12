@@ -154,13 +154,13 @@ namespace TwitchChatBot.Service
                     Conn.Open();
                     MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
                     BotToken = Cmd.ExecuteScalar().ToString();
-                    if (string.IsNullOrWhiteSpace(BotToken))
+                    if (!string.IsNullOrWhiteSpace(BotToken))
                     {
-                        Console.WriteLine("Bot Cannot Be Found");
+                        Console.WriteLine("Bot Found");
                     }
                     else
                     {
-                        Console.WriteLine("Bot Found");
+                        Console.WriteLine("Bot Cannot Be Found");
                     }
                 }
                 catch (MySqlException E)

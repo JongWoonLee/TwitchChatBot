@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace TwitchChatBot.Models
@@ -38,10 +39,27 @@ namespace TwitchChatBot.Models
                 // Read any message from the chat room
                 string Message = IrcClient.ReadMessage();
                 Console.WriteLine(Message); // Print raw irc messages
-                //Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-                if (!string.IsNullOrWhiteSpace(Message))
                 if (!string.IsNullOrWhiteSpace(Message))
                 {
+
+                    string pattern = @$":{this.IrcClient.Channel}!{this.IrcClient.Channel}@{this.IrcClient.Channel}.tmi.twitch.tv\s(\w+)\s#(\w+)\s:!(\w+)";
+                    Match match = Regex.Match(Message, pattern);
+                    if (match.Success)
+                    {
+                        match.Groups[1].Value.Trim().Equals("PRIVMSG"); // Message Type
+                        match.Groups[2].Value.Trim(); // Message Sender
+                        match.Groups[3].Value.Trim(); // Command
+                        //match.Groups[4].Value.Trim(); // Command Target(x 구현 할지 안할지 모르는데 일단은 없이 동작하게 봄);
+                    }
+
+                    foreach (var Ele in Commands)
+                    {
+                        if (Message.StartsWith(Ele.CommandHead))
+                        {
+                            IrcClient.SendPublicChatMessage(Ele.CommandBody);
+                        }
+                    }
+
                     if (Message.Contains("PRIVMSG"))
                     {
                         // Messages from the users will look something like this (without quotes):
@@ -61,14 +79,6 @@ namespace TwitchChatBot.Models
                         if (Message.Equals("!hello"))
                         {
                             IrcClient.SendPublicChatMessage("Hello World!");
-                        }
-
-                        foreach(var Ele in Commands)
-                        {
-                            if(Message.StartsWith(Ele.CommandHead))
-                            {
-                                IrcClient.SendPublicChatMessage(Ele.CommandBody);
-                            }
                         }
                     }
                 }
