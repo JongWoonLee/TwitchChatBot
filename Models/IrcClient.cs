@@ -71,6 +71,7 @@ namespace TwitchChatBot.Models
             try
             {
                 string Message = InputStream.ReadLine();
+                Console.WriteLine("ReadMessage : " + Message);
                 return Message;
             }
             catch (Exception E)

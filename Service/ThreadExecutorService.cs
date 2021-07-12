@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using TwitchChatBot.Models;
 
 namespace TwitchChatBot.Service
@@ -18,11 +19,9 @@ namespace TwitchChatBot.Service
         private string ConnectionString { get; set; }
         private string ClientSecret { get; set; }
 
-        private TwitchToken BotToken;
+        public TwitchToken BotToken { get; set; }
         public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
         private List<Command> Commands;
-
-        private Thread BotTokenRefresher;
 
         private MySqlConnection GetConnection()
         {
@@ -38,8 +37,6 @@ namespace TwitchChatBot.Service
             this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.Commands = FindCommands();
             Initialize();
-            this.BotTokenRefresher = new Thread(new ThreadStart(this.Run));
-            Start();
         }
 
         private void Initialize()
@@ -109,6 +106,11 @@ namespace TwitchChatBot.Service
             }
         }
 
+        /// <summary>
+        /// RefreshToken 값을 이용해 처음 BotToken 값을 Validate
+        /// </summary>
+        /// <param name="RefreshToken"></param>
+        /// <returns></returns>
         public TwitchToken ValidateAccessToken(string RefreshToken)
         {
             string Url = "https://id.twitch.tv/oauth2/token";
@@ -124,6 +126,21 @@ namespace TwitchChatBot.Service
             TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
 
             return TwitchToken;
+        }
+
+        public void ValidateAccessTokenEveryHour()
+        {
+            string Url = "https://id.twitch.tv/oauth2/token";
+            var Client = new WebClient();
+            var Data = new NameValueCollection();
+            Data["grant_type"] = "refresh_token";
+            Data["client_id"] = ClientId;
+            Data["client_secret"] = this.ClientSecret;
+            Data["refresh_token"] = this.BotToken.RefreshToken;
+
+            var Response = Client.UploadValues(Url, "POST", Data);
+            string Str = Encoding.Default.GetString(Response);
+            this.BotToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
         }
 
         private string FindBotRefreshToken()
@@ -165,30 +182,6 @@ namespace TwitchChatBot.Service
             this.Commands,
             ConnectionString
             ));
-        }
-
-        public void Start()
-        {
-            BotTokenRefresher.IsBackground = true;
-            BotTokenRefresher.Start();
-        }
-
-        // 한시간에 한번씩 Token Validate 하기
-        public void Run()
-        {
-            while (true)
-            {
-                try
-                {
-                    ValidateAccessToken(BotToken.RefreshToken);
-                    Thread.Sleep(3600000); // 1 시간
-                }
-                catch (ThreadInterruptedException E)
-                {
-                    Console.WriteLine(E.Message);
-                    Console.WriteLine("newThread inturrupted");
-                }
-            }
         }
     }
 }

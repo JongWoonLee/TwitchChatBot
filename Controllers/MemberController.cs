@@ -15,6 +15,11 @@ namespace TwitchChatBot.Controllers
         private readonly MemberService MemberService;
         private readonly ThreadExecutorService ThreadExecutorService;
 
+        /// <summary>
+        /// API 컨트롤러
+        /// </summary>
+        /// <param name="MemberService">Member관련 로직 서비스</param>
+        /// <param name="ThreadExecutorService">Bot관련 로직 서비스</param>
         public MemberController(MemberService MemberService, ThreadExecutorService ThreadExecutorService)
         {
             this.MemberService = MemberService;
@@ -22,25 +27,21 @@ namespace TwitchChatBot.Controllers
         }
 
         /// <summary>
-        /// Twitch Login 을 하는 GET 메소드.
-        /// code 가 없으면 코드를 가져오는 요청을 하고
-        /// code 가 있으면 Token을 가지고 온 뒤
-        /// Token 을 이용해서 User data를 얻어오고
-        /// Streamer Table 에 Insert를 한다.
+        /// Twitch Login
         /// </summary>
         /// <param name="Code"></param>
         /// <returns></returns>
         [HttpGet, Route("/member/index")]
         public IActionResult Index(string Code)
         {
-            if (string.IsNullOrWhiteSpace(Code))
+            if (string.IsNullOrWhiteSpace(Code)) // code 가 없으면 코드를 가져오는 요청을 하고
             {
                 string url = MemberService.GetRedirectURL();
                 return Redirect(url);
             }
-            TwitchToken TwitchToken = MemberService.ConnectReleasesWebClient(Code);
-            User User = MemberService.ValidatingRequests(TwitchToken.AccessToken);
-            int InsertResult = MemberService.InsertStreamer(TwitchToken, User);
+            TwitchToken TwitchToken = MemberService.ConnectReleasesWebClient(Code); // code 가 있으면 Token을 가지고 온 뒤
+            User User = MemberService.ValidatingRequests(TwitchToken.AccessToken); // Token 을 이용해서 User data를 얻어오고
+            int InsertResult = MemberService.InsertStreamer(TwitchToken, User); // Streamer Table 에 Insert
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
             {
