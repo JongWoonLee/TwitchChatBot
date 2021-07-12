@@ -112,7 +112,7 @@ namespace TwitchChatBot.Service
                     if (Result == 1)
                     {
                         Console.WriteLine("Insert Success");
-                        InsertStreamerDetail(Conn, FindLastInsertKey(Conn));
+                        InsertStreamerDetail(Conn, User.UserId);
                     }
                     else
                     {
@@ -129,15 +129,6 @@ namespace TwitchChatBot.Service
             }
         }
 
-        private long FindLastInsertKey(MySqlConnection Conn)
-        {
-            long LastInsertKey = 0;
-            string SQL = "SELECT LAST_INSERT_ID() FROM streamer;"; // 이전에 실행된 query의 PK를 알아오는 Query
-            MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
-            LastInsertKey = Convert.ToInt64(Cmd.ExecuteScalar());
-
-            return LastInsertKey;
-        }
 
         private int InsertStreamerDetail(MySqlConnection Conn, long InheritedKey)
         {

@@ -38,10 +38,9 @@ namespace TwitchChatBot.Models
             {
                 // Read any message from the chat room
                 string Message = IrcClient.ReadMessage();
-                Console.WriteLine(Message); // Print raw irc messages
                 if (!string.IsNullOrWhiteSpace(Message))
                 {
-
+                    Console.WriteLine(Message); // Print raw irc messages
                     string pattern = @$":{this.IrcClient.Channel}!{this.IrcClient.Channel}@{this.IrcClient.Channel}.tmi.twitch.tv\s(\w+)\s#(\w+)\s:!(\w+)";
                     Match match = Regex.Match(Message, pattern);
                     if (match.Success)

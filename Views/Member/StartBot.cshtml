@@ -1,14 +1,32 @@
 ﻿@{
     ViewData["Title"] = "Index Page";
+    var Result = (int)ViewData["result"];
 }
-
 <div class="text-center">
     <div class="border">
+        <h2>봇 채널 입장</h2>
         <div>
         </div>
-        <div>
-           봇 활동 준비중~
-        </div>
+        @if (Result == 1)
+        {
+            <div>
+                봇 활동중~
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" checked>
+                <label class="form-check-label" for="flexSwitchCheckChecked">봇 입장시키기</label>
+            </div>
+        }
+        else
+        {
+            <div>
+                봇 활동 준비중~
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked">
+                <label class="form-check-label" for="flexSwitchCheckChecked">봇 입장시키기</label>
+            </div>
+        }
         <div>
             <form method="post" href="/member/startbot">
                 <input name="msg" type="text" />
@@ -17,3 +35,26 @@
         </div>
     </div>
 </div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script>
+    const fSwitch = document.getElementById("flexSwitchCheckChecked");
+    fSwitch.addEventListener("click", function () {
+        $.ajax({
+            type: "post",
+            url: "/member/startbot",
+            headers: {
+                "Content-type": "application/json; charset=utf-8",
+            },
+            data: JSON.stringify({
+                botInUse : @Result
+            }),
+            success: function (result) {
+                // 성공적인 댓글 등록 처리 알림
+                if (result == "") {
+                }
+            }
+        });
+    })
+
+
+</script>

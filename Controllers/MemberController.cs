@@ -58,34 +58,34 @@ namespace TwitchChatBot.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet, Route("/member/startbot")]
-        public IActionResult StartBot() // 로그인한 유저가 봇 사용중인지 확인하는 작업 요망.. 아마 처음 insert할때 같이 Insert해야 할듯함
+        public IActionResult StartBot()
         {
-            //string userId = Request.Cookies["user_id"];
+            string userId = Request.Cookies["user_id"];
             //string userId = "704190345";
-            //int result = MemberService.FindBotInUseByUserId(userId);
-            //ViewData["result"] = result;
+            int result = MemberService.FindBotInUseByUserId(userId);
+            ViewData["result"] = result;
             return View();
         }
 
         /// <summary>
         /// Member 정보를 받아 봇을 실행시키는 POST 메소드
         /// </summary>
-        /// <param name="Msg"></param>
+        /// <param name="BotInUse"></param>
         /// <returns></returns>
         [HttpPost, Route("/member/startbot")]
-        public IActionResult StartBot(string Msg = "jongwoonlee")
+        public IActionResult StartBot([FromBody]int BotInUse = 0)
         {
-            //string userId = Request.Cookies["user_id"];
-            //long lUserId = Convert.ToInt64(userId);
-            //string channelName = Request.Cookies["channel_name"];
-            //ThreadExecutorService.RegisterBot(IUserId, "simple_irc_bot", channelName);
+
+            string userId = Request.Cookies["user_id"];
+            long lUserId = Convert.ToInt64(userId);
+            string channelName = Request.Cookies["channel_name"];
+            ThreadExecutorService.RegisterBot(lUserId, "simple_irc_bot", channelName);
 
             ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "whddns262");
             ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "mbnv262");
 
             return RedirectToAction("Index", "Home");
         }
-
     }
 
 
