@@ -183,5 +183,19 @@ namespace TwitchChatBot.Service
             ConnectionString
             ));
         }
+
+        public void DisposeBot(long Id)
+        {
+            SimpleTwitchBot SimpleTwitchBot = ManagedBot[Id];
+            SimpleTwitchBot.IrcClient.CloseTcpClient();
+            SimpleTwitchBot.StopDoWork();
+            try
+            {
+            ManagedBot.Remove(Id);
+            }catch(ArgumentNullException E)
+            {
+                Console.WriteLine(E.Message);
+            }
+        }
     }
 }

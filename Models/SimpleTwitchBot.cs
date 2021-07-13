@@ -13,6 +13,8 @@ namespace TwitchChatBot.Models
         private PingSender PingSender;
         public List<Command> Commands;
         private string ConnectionString;
+        private bool ThreadDoWorkRun;
+
 
         public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, List<Command> Commands, string ConnectionString)
         {
@@ -20,6 +22,7 @@ namespace TwitchChatBot.Models
             this.PingSender = PingSender;
             this.Commands = Commands;
             this.ConnectionString = ConnectionString;
+            this.ThreadDoWorkRun = true;
             Thread = new Thread(new ThreadStart(this.Run));
             Start();
         }
@@ -34,7 +37,7 @@ namespace TwitchChatBot.Models
         {
             IrcClient.SendPublicChatMessage("Here Comes A Connect Message");
 
-            while (true)
+            while (ThreadDoWorkRun)
             {
                 // Read any message from the chat room
                 string Message = IrcClient.ReadMessage();
@@ -81,6 +84,15 @@ namespace TwitchChatBot.Models
                         }
                     }
                 }
+            }
+        }
+        
+        public void StopDoWork()
+        {
+            if (ThreadDoWorkRun)
+            {
+                ThreadDoWorkRun = false;
+                Thread.Join();
             }
         }
         private MySqlConnection GetConnection()

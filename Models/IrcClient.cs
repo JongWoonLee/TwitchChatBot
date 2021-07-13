@@ -79,6 +79,10 @@ namespace TwitchChatBot.Models
                 return "Error receiving message: " + E.Message;
             }
         }
+        public void CloseTcpClient()
+        {
+            this.TcpClient.Close();
+        }
     }
 }
 
