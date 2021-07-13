@@ -16,6 +16,14 @@ namespace TwitchChatBot.Models
         private StreamReader InputStream;
         private StreamWriter OutputStream;
 
+        /// <summary>
+        /// TcpClient를 이용한 통신 전담 객체
+        /// </summary>
+        /// <param name="Ip">IP Address</param>
+        /// <param name="Port">연결 포트번호</param>
+        /// <param name="UserName">접속하는 유저명</param>
+        /// <param name="Password">User Oauth AccessToken</param>
+        /// <param name="Channel">접속할 채널</param>
         public IrcClient(string Ip, int Port, string UserName, string Password, string Channel)
         {
             try

@@ -28,7 +28,7 @@ namespace TwitchChatBot.Controllers
         /// <summary>
         /// Twitch Login
         /// </summary>
-        /// <param name="Code"></param>
+        /// <param name="Code">Token을 가져오기 위한 AccessCode</param>
         /// <returns></returns>
         [HttpGet, Route("/member/index")]
         public IActionResult Index(string Code)
@@ -42,7 +42,7 @@ namespace TwitchChatBot.Controllers
             User User = MemberService.ValidatingRequests(TwitchToken.AccessToken); // Token 을 이용해서 User data를 얻어오고
             int InsertResult = MemberService.InsertStreamer(TwitchToken, User); // Streamer Table 에 Insert
 
-            if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"]))
+            if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"])) // Cookie 에 User정보가 없으면 저장.
             {
                 Response.Cookies.Append("access_token", TwitchToken.AccessToken);
                 Response.Cookies.Append("user_id", Convert.ToString(User.UserId));
@@ -53,23 +53,24 @@ namespace TwitchChatBot.Controllers
         }
 
         /// <summary>
-        /// Startbot View 로 이동하는 GET 메소드
+        /// Startbot View User 의 봇사용 정보를 가지고 이동
         /// </summary>
         /// <returns></returns>
         [HttpGet, Route("/member/startbot")]
         public IActionResult StartBot()
         {
             string userId = Request.Cookies["user_id"];
-            int result = MemberService.FindBotInUseByUserId(userId);
-            ViewData["result"] = result;
-            //return View("~/Views/Member/StartBot.cshtml");
+            if(string.IsNullOrWhiteSpace(userId))
+            {
+                int result = MemberService.FindBotInUseByUserId(userId);
+                ViewData["result"] = result;
+            }
             return View();
         }
 
         /// <summary>
         /// 봇 사용 여부를 받아 봇을 실행/폐기
         /// </summary>
-        /// <param name="BotInUse"></param>
         /// <returns></returns>
         [HttpPost, Route("/member/startbot")]
         public string StartBotPost()
@@ -79,17 +80,17 @@ namespace TwitchChatBot.Controllers
             {
                 var body = reader.ReadToEndAsync();
                 JObject JObject = JObject.Parse(body.Result);
-                BotInUse = (int)JObject["BotInUse"];
+                BotInUse = (int)JObject["BotInUse"]; // Request에 들어있는 BotInUse
             }
             string userId = Request.Cookies["user_id"];
             long lUserId = Convert.ToInt64(userId);
             string channelName = Request.Cookies["channel_name"];
-            if(BotInUse == 1)
+            if(BotInUse == 1) // 봇을 사용 한다면
             {
                 MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
                 ThreadExecutorService.RegisterBot(lUserId, "simple_irc_bot", channelName);
             }
-            else
+            else // 봇을 사용 안한다면
             {
                 MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
                 ThreadExecutorService.DisposeBot(lUserId);

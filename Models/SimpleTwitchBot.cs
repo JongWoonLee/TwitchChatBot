@@ -15,7 +15,13 @@ namespace TwitchChatBot.Models
         private string ConnectionString;
         private bool ThreadDoWorkRun;
 
-
+        /// <summary>
+        /// 주입받은 값을 이용해 초기 세팅을 한다.
+        /// </summary>
+        /// <param name="IrcClient">연결을 맺은 IrcClient</param>
+        /// <param name="PingSender">IrcClient에 주기적으로 핑을 보내는 PingSender</param>
+        /// <param name="Commands">봇 기본 명령어</param>
+        /// <param name="ConnectionString">Connection생성을 위한 ConnectionString</param>
         public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, List<Command> Commands, string ConnectionString)
         {
             this.IrcClient = IrcClient;
@@ -27,12 +33,18 @@ namespace TwitchChatBot.Models
             Start();
         }
 
+        /// <summary>
+        /// 쓰레드 시작
+        /// </summary>
         public void Start()
         {
             Thread.IsBackground = true;
             Thread.Start();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void Run()
         {
             IrcClient.SendPublicChatMessage("Here Comes A Connect Message");
@@ -88,11 +100,14 @@ namespace TwitchChatBot.Models
             //IrcClient.SendPublicChatMessage("GoodBye Message");
         }
 
+        /// <summary>
+        /// 객체를 제거할때 백그라운드 쓰레드를 중지 시키고 폐기한다.
+        /// </summary>
         public void StopDoWork()
         {
             if (ThreadDoWorkRun)
             {
-                ThreadDoWorkRun = false;
+                ThreadDoWorkRun = false; // Run() loop 탈출을 위한 flag 값 설정
                 Thread.Join();
             }
         }

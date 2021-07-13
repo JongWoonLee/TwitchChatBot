@@ -33,6 +33,7 @@ namespace TwitchChatBot.Service
             return new MySqlConnection(ConnectionString);
         }
 
+
         public TwitchToken ConnectReleasesWebClient(string Code)
         {
             string Url = "https://id.twitch.tv/oauth2/token";
