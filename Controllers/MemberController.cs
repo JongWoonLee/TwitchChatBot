@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text;
 using TwitchChatBot.Models;
 using TwitchChatBot.Service;
 
@@ -61,30 +60,41 @@ namespace TwitchChatBot.Controllers
         public IActionResult StartBot()
         {
             string userId = Request.Cookies["user_id"];
-            //string userId = "704190345";
             int result = MemberService.FindBotInUseByUserId(userId);
             ViewData["result"] = result;
+            //return View("~/Views/Member/StartBot.cshtml");
             return View();
         }
 
         /// <summary>
-        /// Member 정보를 받아 봇을 실행시키는 POST 메소드
+        /// 봇 사용 여부를 받아 봇을 실행/폐기
         /// </summary>
         /// <param name="BotInUse"></param>
         /// <returns></returns>
         [HttpPost, Route("/member/startbot")]
-        public IActionResult StartBot([FromBody]int BotInUse = 0)
+        public string StartBotPost()
         {
-
+            int BotInUse = 0;
+            using (var reader = new StreamReader(Request.Body))
+            {
+                var body = reader.ReadToEndAsync();
+                JObject JObject = JObject.Parse(body.Result);
+                BotInUse = (int)JObject["BotInUse"];
+            }
             string userId = Request.Cookies["user_id"];
             long lUserId = Convert.ToInt64(userId);
             string channelName = Request.Cookies["channel_name"];
-            ThreadExecutorService.RegisterBot(lUserId, "simple_irc_bot", channelName);
-
-            ThreadExecutorService.RegisterBot(101, "simple_irc_bot", "whddns262");
-            ThreadExecutorService.RegisterBot(102, "simple_irc_bot", "mbnv262");
-
-            return RedirectToAction("Index", "Home");
+            if(BotInUse == 1)
+            {
+                MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
+                ThreadExecutorService.RegisterBot(lUserId, "simple_irc_bot", channelName);
+            }
+            else
+            {
+                MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
+                ThreadExecutorService.DisposeBot(lUserId);
+            }
+            return "success";
         }
     }
 

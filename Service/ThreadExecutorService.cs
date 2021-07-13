@@ -41,7 +41,7 @@ namespace TwitchChatBot.Service
 
         private void Initialize()
         {
-            string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id";
+            string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id;";
             using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
@@ -54,7 +54,7 @@ namespace TwitchChatBot.Service
                         {
                             var StreamerId = Convert.ToInt64(Reader["streamer_id"]);
                             var Channel = Reader["channel_name"].ToString();
-                            var Password = BotToken.AccessToken;
+                            var Password = "oauth:" + BotToken.AccessToken;
                             IrcClient IrcClient = new IrcClient(Ip, Port, Channel, Password, Channel);
                             ManagedBot.Add(StreamerId, new SimpleTwitchBot(
                                 IrcClient,

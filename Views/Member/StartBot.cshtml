@@ -9,22 +9,16 @@
         </div>
         @if (Result == 1)
         {
-            <div>
-                봇 활동중~
-            </div>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" checked>
-                <label class="form-check-label" for="flexSwitchCheckChecked">봇 입장시키기</label>
+                <label class="form-check-label" for="flexSwitchCheckChecked">봇 활동</label>
             </div>
         }
         else
         {
-            <div>
-                봇 활동 준비중~
-            </div>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked">
-                <label class="form-check-label" for="flexSwitchCheckChecked">봇 입장시키기</label>
+                <label class="form-check-label" for="flexSwitchCheckChecked">봇 활동</label>
             </div>
         }
         <div>
@@ -37,23 +31,32 @@
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script>
-    const fSwitch = document.getElementById("flexSwitchCheckChecked");
-    fSwitch.addEventListener("click", function () {
+    // 누르는 순간 판단하므로 이벤트 시점은 눌린 뒤의 시점이다. check 상태에서 누른동작이면 checked false가 될것
+    $('input:checkbox[id="flexSwitchCheckChecked"]').click(function () {
+        var v = $(this).is(":checked")
+        console.log(v);
+        var botInUse = $(this).is(":checked") ? 1 : 0
+        console.log(botInUse);
         $.ajax({
             type: "post",
             url: "/member/startbot",
             headers: {
-                "Content-type": "application/json; charset=utf-8",
+                "Content-type": "application/json;",
             },
             data: JSON.stringify({
-                botInUse : @Result
+                BotInUse : botInUse
             }),
             success: function (result) {
-                // 성공적인 댓글 등록 처리 알림
-                if (result == "") {
+                if (result == "success") {
+                    if (botInUse == 1) {
+                        $(this).prop("checked", true);
+                    } else {
+                        $(this).prop("checked", false);
+                    }
                 }
             }
         });
+
     })
 
 

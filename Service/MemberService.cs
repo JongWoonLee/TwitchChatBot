@@ -148,19 +148,50 @@ namespace TwitchChatBot.Service
             return Result;
         }
 
+        public int UpdateStreamerDetailBotInUse(long StreamerId, int BotInUse)
+        {
+            var Result = 0;
+            string SQL = $"UPDATE streamer_detail SET bot_in_use = @BotInUse WHERE streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@BotInUse", BotInUse);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
+                    {
+                        Console.WriteLine("Update Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update Fail!!");
+                    }
+                }
+                catch (MySqlException E)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(E.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
+
+        }
+
 
         public int FindBotInUseByUserId(string UserId)
         {
             long StreamerId = Convert.ToInt64(UserId);
             int Result = 0;
-            string SQL = "SELECT bot_in_use FROM streamer_detail where streamer_id = {@StreamerId};";
+            string SQL = $"SELECT bot_in_use FROM streamer_detail where streamer_id = {StreamerId};";
             using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
                 {
                     Conn.Open();
                     MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
-                    Cmd.Parameters.AddWithValue("@StreamerId", StreamerId);
                     Result = Convert.ToInt32(Cmd.ExecuteScalar());
                 }
                 catch (MySqlException E)
