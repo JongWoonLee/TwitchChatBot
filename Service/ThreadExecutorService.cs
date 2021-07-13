@@ -187,6 +187,7 @@ namespace TwitchChatBot.Service
         public void DisposeBot(long Id)
         {
             SimpleTwitchBot SimpleTwitchBot = ManagedBot[Id];
+            SimpleTwitchBot.PingSender.StopDoWork();
             SimpleTwitchBot.IrcClient.CloseTcpClient();
             SimpleTwitchBot.StopDoWork();
             try

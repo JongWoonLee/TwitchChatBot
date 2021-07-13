@@ -10,7 +10,7 @@ namespace TwitchChatBot.Models
     {
         private Thread Thread;
         public IrcClient IrcClient { get; set; }
-        private PingSender PingSender;
+        public PingSender PingSender;
         public List<Command> Commands;
         private string ConnectionString;
         private bool ThreadDoWorkRun;
@@ -85,8 +85,9 @@ namespace TwitchChatBot.Models
                     }
                 }
             }
+            //IrcClient.SendPublicChatMessage("GoodBye Message");
         }
-        
+
         public void StopDoWork()
         {
             if (ThreadDoWorkRun)
@@ -100,21 +101,21 @@ namespace TwitchChatBot.Models
             return new MySqlConnection(ConnectionString);
         }
 
-        //private List<ForbiddenWord> FindForbiddenWords()
-        //{
-        //    List<ForbiddenWord> list = new List<ForbiddenWord>();
-        //    return list;
-        //}
+        private List<ForbiddenWord> FindForbiddenWords()
+        {
+            List<ForbiddenWord> list = new List<ForbiddenWord>();
+            return list;
+        }
 
-        //private class ForbiddenWord
-        //{
-        //    public long StreamerId { get;}
-        //    public string ForbiddenWordList { get; set; }
-        //    ForbiddenWord(long streamerId, string forbiddenWord)
-        //    {
-        //        this.StreamerId = streamerId;
-        //        this.ForbiddenWordList = forbiddenWord;
-        //    }
-        //}
+        private class ForbiddenWord
+        {
+            public long StreamerId { get;}
+            public string ForbiddenWordList { get; set; }
+            ForbiddenWord(long streamerId, string forbiddenWord)
+            {
+                this.StreamerId = streamerId;
+                this.ForbiddenWordList = forbiddenWord;
+            }
+        }
     }
 }
