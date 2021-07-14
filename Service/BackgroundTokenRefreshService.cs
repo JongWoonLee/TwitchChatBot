@@ -13,6 +13,7 @@ namespace TwitchChatBot.Service
         public string BotRefreshToken;
 
         public ThreadExecutorService ThreadExecutorService { get; set; }
+
         /// <summary>
         /// Background에서 BotToken을 Refresh 해주는 객체
         /// </summary>

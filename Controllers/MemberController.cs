@@ -60,7 +60,7 @@ namespace TwitchChatBot.Controllers
         public IActionResult StartBot()
         {
             string userId = Request.Cookies["user_id"];
-            if(string.IsNullOrWhiteSpace(userId))
+            if(!string.IsNullOrWhiteSpace(userId))
             {
                 int result = MemberService.FindBotInUseByUserId(userId);
                 ViewData["result"] = result;
@@ -96,6 +96,18 @@ namespace TwitchChatBot.Controllers
                 ThreadExecutorService.DisposeBot(lUserId);
             }
             return "success";
+        }
+
+        [HttpGet, Route("/member/logout")]
+        public IActionResult Logout()
+        {
+            if (!string.IsNullOrWhiteSpace(Request.Cookies["user_id"])) // Cookie 에 User정보가 없으면 저장.
+            {
+                Response.Cookies.Delete("access_token");
+                Response.Cookies.Delete("user_id");
+                Response.Cookies.Delete("channel_name");
+            }
+            return RedirectToAction("Index", "Home");
         }
     }
 

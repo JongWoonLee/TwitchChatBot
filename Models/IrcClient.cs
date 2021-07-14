@@ -44,7 +44,7 @@ namespace TwitchChatBot.Models
             }
             catch (Exception E)
             {
-                Console.WriteLine(E.Message);
+                Console.WriteLine("Error occurred in IRCClient Initialize : " +E.Message);
             }
         }
 
@@ -79,11 +79,11 @@ namespace TwitchChatBot.Models
             try
             {
                 string Message = InputStream.ReadLine();
-                if(!string.IsNullOrWhiteSpace(Message))
-                {
-                    Console.WriteLine("ReadMessage : " + Message);
-                }
                 return Message;
+            }catch (IOException IOE)
+            {
+                //CloseTcpClient();
+                return IOE.Message;
             }
             catch (Exception E)
             {
@@ -92,7 +92,15 @@ namespace TwitchChatBot.Models
         }
         public void CloseTcpClient()
         {
-            this.TcpClient.Close();
+            try 
+            { 
+                this.TcpClient.GetStream().Close();
+                this.TcpClient.Close();
+            }
+            catch (ObjectDisposedException E)
+            {
+                Console.WriteLine("Object Dispose Exception: "+E.Message);
+            }
         }
     }
 }

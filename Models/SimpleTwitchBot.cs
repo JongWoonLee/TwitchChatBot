@@ -47,22 +47,24 @@ namespace TwitchChatBot.Models
         /// </summary>
         public void Run()
         {
-            IrcClient.SendPublicChatMessage("Here Comes A Connect Message");
+            IrcClient.SendPublicChatMessage("Connect Message");
 
             while (ThreadDoWorkRun)
             {
-                // Read any message from the chat room
+                // 채팅방에 메세지를 읽는다.
+
                 string Message = IrcClient.ReadMessage();
                 if (!string.IsNullOrWhiteSpace(Message))
                 {
-                    Console.WriteLine(Message); // Print raw irc messages
-                    string pattern = @$":{this.IrcClient.Channel}!{this.IrcClient.Channel}@{this.IrcClient.Channel}.tmi.twitch.tv\s(\w+)\s#(\w+)\s:!(\w+)";
+                    Console.WriteLine(Message); // IRC 메세지를 출력
+
+                    string pattern = @$":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
                     Match match = Regex.Match(Message, pattern);
                     if (match.Success)
                     {
-                        match.Groups[1].Value.Trim().Equals("PRIVMSG"); // Message Type
-                        match.Groups[2].Value.Trim(); // Message Sender
-                        match.Groups[3].Value.Trim(); // Command
+                        match.Groups[1].Value.Trim(); // User
+                        match.Groups[4].Value.Trim().Equals("PRIVMSG"); // Message Type
+                        match.Groups[5].Value.Trim(); // Command
                         //match.Groups[4].Value.Trim(); // Command Target(x 구현 할지 안할지 모르는데 일단은 없이 동작하게 봄);
                     }
 
@@ -76,20 +78,16 @@ namespace TwitchChatBot.Models
 
                     if (Message.Contains("PRIVMSG"))
                     {
-                        // Messages from the users will look something like this (without quotes):
-                        // Format: ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
+                        // 메세지 예시:
+                        // ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
 
-                        // Modify message to only retrieve user and message
+                        // 메세지 파싱부
                         int IntIndexParseSign = Message.IndexOf('!');
-                        string UserName = Message.Substring(1, IntIndexParseSign - 1); // parse username from specific section (without quotes)
-                                                                                       // Format: ":[user]!"
-                                                                                       // Get user's message
+                        string UserName = Message.Substring(1, IntIndexParseSign - 1); 
                         IntIndexParseSign = Message.IndexOf(" :");
                         Message = Message.Substring(IntIndexParseSign + 2);
 
-                        //Console.WriteLine(message); // Print parsed irc message (debugging only)
-
-                        // General commands anyone can use
+                        // Commands
                         if (Message.Equals("!hello"))
                         {
                             IrcClient.SendPublicChatMessage("Hello World!");
@@ -97,7 +95,6 @@ namespace TwitchChatBot.Models
                     }
                 }
             }
-            //IrcClient.SendPublicChatMessage("GoodBye Message");
         }
 
         /// <summary>
@@ -108,7 +105,7 @@ namespace TwitchChatBot.Models
             if (ThreadDoWorkRun)
             {
                 ThreadDoWorkRun = false; // Run() loop 탈출을 위한 flag 값 설정
-                Thread.Join();
+                this.Thread.Join();
             }
         }
         private MySqlConnection GetConnection()

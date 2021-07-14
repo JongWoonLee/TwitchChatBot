@@ -70,6 +70,10 @@ namespace TwitchChatBot.Service
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
                     Console.WriteLine(E.ToString());
                 }
+                //catch(IOException IOE)
+                //{
+
+                //}
                 Conn.Close();
             }
         }
