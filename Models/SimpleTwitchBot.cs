@@ -58,7 +58,7 @@ namespace TwitchChatBot.Models
                 {
                     Console.WriteLine(Message); // IRC 메세지를 출력
 
-                    string pattern = @$":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
+                    string pattern = $@":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
                     Match match = Regex.Match(Message.Trim(), pattern);
                     var v = match.Success;
                     if (match.Success && match.Groups[4].Value.Trim().Equals("PRIVMSG"))

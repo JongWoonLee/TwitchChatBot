@@ -1,10 +1,13 @@
 ﻿using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using TwitchChatBot.Models;
 
 namespace TwitchChatBot.Service
@@ -218,22 +221,33 @@ namespace TwitchChatBot.Service
 
         public void UpdateCommandData()
         {
-            //string Url = "https://corona-live.com/";
+            string Url = "https://corona-live.com/";
+            ChromeOptions Options = new ChromeOptions();
 
-            //using (IWebDriver driver = new ChromeDriver())
-            //{
-            //    driver.Navigate().GoToUrl(Url);
-            //    driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(10);
-            //    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+            Options = new ChromeOptions();
+            Options.AddArgument("headless");
 
-            //    string PageSource = driver.PageSource;
-            //    string pattern = $"fpbNmB\">(w+)</span>";
-            //    Match match = Regex.Match(PageSource, pattern);
-            //    if (match.Success)
-            //    {
-            //        Commands["!covid"].CommandBody = match.Groups[1].Value.Trim();
-            //    }
-            //}
+            using (IWebDriver driver = new ChromeDriver(Options))
+            {
+                try
+                {
+                    driver.Navigate().GoToUrl(Url);
+                    driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(10);
+                    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+
+                    string PageSource = driver.PageSource;
+                    string p = "([0-9]{1,},?[0-9]{1,})<span"; // , 도 포함하게 해야함..
+                    Match match = Regex.Match(PageSource, p);
+                    if (match.Success)
+                    {
+                        Commands["covid"].CommandBody = "일 확진자수 : " + match.Groups[1].Value.Trim() + "명";
+                    }
+                }
+                finally
+                {
+                    driver.Quit();
+                }
+            }
         }
     }
 }
