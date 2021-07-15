@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace TwitchChatBot.Models
 {
@@ -29,15 +32,21 @@ namespace TwitchChatBot.Models
                 this.Channel = Channel;
 
                 TcpClient = new TcpClient(Ip, Port);
+
                 InputStream = new StreamReader(TcpClient.GetStream());
-                OutputStream = new StreamWriter(TcpClient.GetStream());
+                //InputStream.BaseStream.ReadTimeout = 500; 이게 기본값..
+                OutputStream = new StreamWriter(TcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true };
 
                 // Try to join the room
-                OutputStream.WriteLine("PASS " + Password);
-                OutputStream.WriteLine("NICK " + UserName);
-                OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName);
-                OutputStream.WriteLine("JOIN #" + Channel);
-                OutputStream.Flush();
+                OutputStream.WriteLineAsync("PASS " + Password);
+                OutputStream.WriteLineAsync("NICK " + UserName);
+                OutputStream.WriteLineAsync("USER " + UserName + " 8 * :" + UserName);
+                OutputStream.WriteLineAsync("JOIN #" + Channel);
+                OutputStream.FlushAsync();
+            }
+            catch (IOException E)
+            {
+                throw E;
             }
             catch (Exception E)
             {
@@ -49,8 +58,8 @@ namespace TwitchChatBot.Models
         {
             try
             {
-                OutputStream.WriteLine(Message);
-                OutputStream.Flush();
+                OutputStream.WriteLineAsync(Message);
+                OutputStream.FlushAsync();
             }
             catch (Exception E)
             {
@@ -71,12 +80,11 @@ namespace TwitchChatBot.Models
             }
         }
 
-        public string ReadMessage()
+        public async Task<string> ReadMessage()
         {
             try
             {
-                string Message = InputStream.ReadLine();
-                return Message;
+                return await InputStream.ReadLineAsync();
             }
             catch (IOException IOE)
             {
@@ -103,6 +111,12 @@ namespace TwitchChatBot.Models
                 Console.WriteLine("Object Dispose Exception: " + E.Message);
             }
         }
+
+        //Outside of start we need to define ValidateServerCertificate
+        //private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        //{
+        //    return sslPolicyErrors == SslPolicyErrors.None;
+        //}
     }
 }
 

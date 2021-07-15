@@ -45,7 +45,7 @@ namespace TwitchChatBot.Models
         /// <summary>
         /// 
         /// </summary>
-        public void Run()
+        public async void Run()
         {
             IrcClient.SendPublicChatMessage("Connect Message");
 
@@ -53,48 +53,81 @@ namespace TwitchChatBot.Models
             {
                 // 채팅방에 메세지를 읽는다.
 
-                string Message = IrcClient.ReadMessage();
+                string Message = await IrcClient.ReadMessage();
                 if (!string.IsNullOrWhiteSpace(Message))
                 {
                     Console.WriteLine(Message); // IRC 메세지를 출력
 
                     string pattern = @$":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
-                    Match match = Regex.Match(Message, pattern);
-                    if (match.Success)
+                    Match match = Regex.Match(Message.Trim(), pattern);
+                    var v = match.Success;
+                    if (match.Success && match.Groups[4].Value.Trim().Equals("PRIVMSG"))
                     {
-                        match.Groups[1].Value.Trim(); // User
-                        match.Groups[4].Value.Trim().Equals("PRIVMSG"); // Message Type
-                        match.Groups[5].Value.Trim(); // Command
-                        //match.Groups[4].Value.Trim(); // Command Target(x 구현 할지 안할지 모르는데 일단은 없이 동작하게 봄);
+                        //match.Groups[1].Value.Trim(); // User
+                        //match.Groups[4].Value.Trim().Equals("PRIVMSG"); // Message Type
+                        //match.Groups[5].Value.Trim(); // Command Target IndexParseSign 뒤로 짜르면 저게 target인지 확인해야할듯(x 구현 할지 안할지 모름);
+                        var RawCommand = match.Groups[5].Value.Trim();
+                        int IntIndexParseSign = RawCommand.IndexOf(' ');
+                        string CommandHead = IntIndexParseSign == -1 ? RawCommand : RawCommand.Substring(0, IntIndexParseSign); // Command
+
+                        foreach (KeyValuePair<string, Command> Cmd in Commands)
+                        {
+                            if (CommandHead.Equals(Cmd.Key))
+                            {
+                                switch (Cmd.Value.CommandType)
+                                {
+                                    case "T":
+                                        IrcClient.SendPublicChatMessage(TwitchCommandOutput(CommandHead, Cmd.Value.CommandBody));
+                                        break;
+                                    case "?":
+                                        //IrcClient.SendPublicChatMessage(QuestionComandOutput());
+                                        break;
+                                    default:
+                                        IrcClient.SendPublicChatMessage(Cmd.Value.CommandBody);
+                                        break;
+                                }
+                            }
+                        }
+
                     }
 
-                    //foreach (var Ele in Commands)
+                    
+
+                    //if (Message.Contains("PRIVMSG"))
                     //{
-                    //    if (Message.StartsWith(Ele.CommandHead))
+                    //    // 메세지 예시:
+                    //    // ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
+
+                    //    // 메세지 파싱부
+                    //    int IntIndexParseSign = Message.IndexOf('!');
+                    //    string UserName = Message.Substring(1, IntIndexParseSign - 1);
+                    //    IntIndexParseSign = Message.IndexOf(" :");
+                    //    Message = Message.Substring(IntIndexParseSign + 2);
+
+                    //    // Commands
+                    //    if (Message.Equals("!hello"))
                     //    {
-                    //        IrcClient.SendPublicChatMessage(Ele.CommandBody);
+                    //        IrcClient.SendPublicChatMessage("Hello World!");
                     //    }
                     //}
-
-                    if (Message.Contains("PRIVMSG"))
-                    {
-                        // 메세지 예시:
-                        // ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
-
-                        // 메세지 파싱부
-                        int IntIndexParseSign = Message.IndexOf('!');
-                        string UserName = Message.Substring(1, IntIndexParseSign - 1);
-                        IntIndexParseSign = Message.IndexOf(" :");
-                        Message = Message.Substring(IntIndexParseSign + 2);
-
-                        // Commands
-                        if (Message.Equals("!hello"))
-                        {
-                            IrcClient.SendPublicChatMessage("Hello World!");
-                        }
-                    }
                 }
             }
+        }
+
+        private string TwitchCommandOutput(string CommandHead, string CommandBody)
+        {
+            string Result = "";
+            switch (CommandHead)
+            {
+                case "":
+                    break;
+                default:
+                    break;
+            }
+
+
+
+            return Result;
         }
 
         /// <summary>
