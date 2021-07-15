@@ -60,7 +60,7 @@ namespace TwitchChatBot.Controllers
         public IActionResult StartBot()
         {
             string userId = Request.Cookies["user_id"];
-            if(!string.IsNullOrWhiteSpace(userId))
+            if (!string.IsNullOrWhiteSpace(userId))
             {
                 int result = MemberService.FindBotInUseByUserId(userId);
                 ViewData["result"] = result;
@@ -76,6 +76,7 @@ namespace TwitchChatBot.Controllers
         public string StartBotPost()
         {
             int BotInUse = 0;
+            string result = null;
             using (var reader = new StreamReader(Request.Body))
             {
                 var body = reader.ReadToEndAsync();
@@ -85,7 +86,7 @@ namespace TwitchChatBot.Controllers
             string userId = Request.Cookies["user_id"];
             long lUserId = Convert.ToInt64(userId);
             string channelName = Request.Cookies["channel_name"];
-            if(BotInUse == 1) // 봇을 사용 한다면
+            if (BotInUse == 1) // 봇을 사용 한다면
             {
                 MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
                 ThreadExecutorService.RegisterBot(lUserId, "simple_irc_bot", channelName);
@@ -93,9 +94,9 @@ namespace TwitchChatBot.Controllers
             else // 봇을 사용 안한다면
             {
                 MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
-                ThreadExecutorService.DisposeBot(lUserId);
+                result = ThreadExecutorService.DisposeBot(lUserId);
             }
-            return "success";
+            return result;
         }
 
         [HttpGet, Route("/member/logout")]

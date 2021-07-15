@@ -13,7 +13,7 @@ namespace TwitchChatBot.Models
         [JsonProperty(PropertyName = "login")]
         public string Login { get; set; }
         [JsonProperty(PropertyName = "scopes")]
-        public string[] Scopes{ get; set; }
+        public string[] Scopes { get; set; }
         [JsonProperty(PropertyName = "user_id")]
         public long UserId { get; set; }
         [JsonProperty(PropertyName = "expires_in")]

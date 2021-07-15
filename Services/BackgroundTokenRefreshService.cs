@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,6 +29,7 @@ namespace TwitchChatBot.Service
             while (!cancellationToken.IsCancellationRequested)
             {
                 ThreadExecutorService.ValidateAccessTokenEveryHour(); // TimeSpan마다 주기적으로 해야할 작업.
+                //ThreadExecutorService.UpdateCommandData();
                 await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
             }
         }

@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.IO;
 using System.Net.Sockets;
 
@@ -44,7 +41,7 @@ namespace TwitchChatBot.Models
             }
             catch (Exception E)
             {
-                Console.WriteLine("Error occurred in IRCClient Initialize : " +E.Message);
+                Console.WriteLine("Error occurred in IRCClient Initialize : " + E.Message);
             }
         }
 
@@ -57,7 +54,7 @@ namespace TwitchChatBot.Models
             }
             catch (Exception E)
             {
-                Console.WriteLine(E.Message);
+                Console.WriteLine("SendIrcMessage : " + E.Message);
             }
         }
 
@@ -80,26 +77,30 @@ namespace TwitchChatBot.Models
             {
                 string Message = InputStream.ReadLine();
                 return Message;
-            }catch (IOException IOE)
+            }
+            catch (IOException IOE)
             {
-                //CloseTcpClient();
-                return IOE.Message;
+                CloseTcpClient();
+                return "Error receiving Read IOE " + IOE.Message;
             }
             catch (Exception E)
             {
-                return "Error receiving message: " + E.Message;
+                return "Error receiving read message: " + E.Message;
             }
         }
         public void CloseTcpClient()
         {
-            try 
-            { 
-                this.TcpClient.GetStream().Close();
-                this.TcpClient.Close();
+            try
+            {
+                if(TcpClient.Connected)
+                {
+                    this.TcpClient.GetStream().Close();
+                    this.TcpClient.Close();
+                }
             }
             catch (ObjectDisposedException E)
             {
-                Console.WriteLine("Object Dispose Exception: "+E.Message);
+                Console.WriteLine("Object Dispose Exception: " + E.Message);
             }
         }
     }

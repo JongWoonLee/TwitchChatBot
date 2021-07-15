@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using TwitchChatBot.Models;
 
 namespace TwitchChatBot.Service
@@ -21,7 +19,7 @@ namespace TwitchChatBot.Service
 
         public TwitchToken BotToken { get; set; }
         public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
-        private List<Command> Commands;
+        private Dictionary<string, Command> Commands;
 
         private MySqlConnection GetConnection()
         {
@@ -70,18 +68,18 @@ namespace TwitchChatBot.Service
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
                     Console.WriteLine(E.ToString());
                 }
-                //catch(IOException IOE)
-                //{
-
-                //}
+                catch (ArgumentException E)
+                {
+                    Console.WriteLine(E.Message);
+                }
                 Conn.Close();
             }
         }
 
 
-        private List<Command> FindCommands()
+        private Dictionary<string, Command> FindCommands()
         {
-            List<Command> List = new List<Command>();
+            Dictionary<string, Command> Dictionary = new Dictionary<string, Command>();
             string SQL = "SELECT * FROM command;";
             using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
@@ -93,10 +91,12 @@ namespace TwitchChatBot.Service
                     {
                         while (Reader.Read())
                         {
-                            List.Add(new Command(
-                                Reader["command_head"].ToString(),
-                                Reader["command_body"].ToString()
-                            )); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
+                            var CommandHead = Reader["command_head"].ToString();
+                            var CommandBody = Reader["command_body"].ToString();
+                            var CommandType = Reader["command_type"].ToString();
+                            Dictionary.Add(
+                                CommandHead, new Command(CommandHead, CommandBody, CommandType)
+                            ); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                         }
                     }
                 }
@@ -106,7 +106,7 @@ namespace TwitchChatBot.Service
                     Console.WriteLine(E.ToString());
                 }
                 Conn.Close();
-                return List;
+                return Dictionary;
             }
         }
 
@@ -180,27 +180,60 @@ namespace TwitchChatBot.Service
         public void RegisterBot(long Id, string UserName, string Channel)
         {
             var IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
-            ManagedBot.Add(Id, new SimpleTwitchBot(
-            IrcClient,
-            new PingSender(IrcClient),
-            this.Commands,
-            ConnectionString
-            ));
-        }
-
-        public void DisposeBot(long Id)
-        {
-            SimpleTwitchBot SimpleTwitchBot = ManagedBot[Id];
-            SimpleTwitchBot.PingSender.StopDoWork();
-            SimpleTwitchBot.IrcClient.CloseTcpClient();
-            SimpleTwitchBot.StopDoWork();
             try
             {
-            ManagedBot.Remove(Id);
-            }catch(ArgumentNullException E)
+                ManagedBot.Add(Id, new SimpleTwitchBot(
+                    IrcClient,
+                    new PingSender(IrcClient),
+                    this.Commands,
+                    ConnectionString
+                    ));
+            }
+            catch (ArgumentException E)
             {
                 Console.WriteLine(E.Message);
             }
+        }
+
+        public string DisposeBot(long Id)
+        {
+            SimpleTwitchBot SimpleTwitchBot = null;
+            try
+            {
+                if (ManagedBot.TryGetValue(Id, out SimpleTwitchBot))
+                {
+                    SimpleTwitchBot.PingSender.StopDoWork();
+                    SimpleTwitchBot.IrcClient.CloseTcpClient();
+                    SimpleTwitchBot.StopDoWork();
+                    ManagedBot.Remove(Id);
+                    return "success";
+                }
+            }
+            catch (ArgumentNullException E)
+            {
+                Console.WriteLine(E.Message);
+            }
+            return "";
+        }
+
+        public void UpdateCommandData()
+        {
+            //string Url = "https://corona-live.com/";
+
+            //using (IWebDriver driver = new ChromeDriver())
+            //{
+            //    driver.Navigate().GoToUrl(Url);
+            //    driver.Manage().Timeouts().PageLoad = TimeSpan.FromSeconds(10);
+            //    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+
+            //    string PageSource = driver.PageSource;
+            //    string pattern = $"fpbNmB\">(w+)</span>";
+            //    Match match = Regex.Match(PageSource, pattern);
+            //    if (match.Success)
+            //    {
+            //        Commands["!covid"].CommandBody = match.Groups[1].Value.Trim();
+            //    }
+            //}
         }
     }
 }

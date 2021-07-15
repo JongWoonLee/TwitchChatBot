@@ -11,7 +11,7 @@ namespace TwitchChatBot.Models
         private Thread Thread;
         public IrcClient IrcClient { get; set; }
         public PingSender PingSender;
-        public List<Command> Commands;
+        public Dictionary<string, Command> Commands;
         private string ConnectionString;
         private bool ThreadDoWorkRun;
 
@@ -22,7 +22,7 @@ namespace TwitchChatBot.Models
         /// <param name="PingSender">IrcClient에 주기적으로 핑을 보내는 PingSender</param>
         /// <param name="Commands">봇 기본 명령어</param>
         /// <param name="ConnectionString">Connection생성을 위한 ConnectionString</param>
-        public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, List<Command> Commands, string ConnectionString)
+        public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString)
         {
             this.IrcClient = IrcClient;
             this.PingSender = PingSender;
@@ -68,13 +68,13 @@ namespace TwitchChatBot.Models
                         //match.Groups[4].Value.Trim(); // Command Target(x 구현 할지 안할지 모르는데 일단은 없이 동작하게 봄);
                     }
 
-                    foreach (var Ele in Commands)
-                    {
-                        if (Message.StartsWith(Ele.CommandHead))
-                        {
-                            IrcClient.SendPublicChatMessage(Ele.CommandBody);
-                        }
-                    }
+                    //foreach (var Ele in Commands)
+                    //{
+                    //    if (Message.StartsWith(Ele.CommandHead))
+                    //    {
+                    //        IrcClient.SendPublicChatMessage(Ele.CommandBody);
+                    //    }
+                    //}
 
                     if (Message.Contains("PRIVMSG"))
                     {
@@ -83,7 +83,7 @@ namespace TwitchChatBot.Models
 
                         // 메세지 파싱부
                         int IntIndexParseSign = Message.IndexOf('!');
-                        string UserName = Message.Substring(1, IntIndexParseSign - 1); 
+                        string UserName = Message.Substring(1, IntIndexParseSign - 1);
                         IntIndexParseSign = Message.IndexOf(" :");
                         Message = Message.Substring(IntIndexParseSign + 2);
 
@@ -121,7 +121,7 @@ namespace TwitchChatBot.Models
 
         private class ForbiddenWord
         {
-            public long StreamerId { get;}
+            public long StreamerId { get; }
             public string ForbiddenWordList { get; set; }
             ForbiddenWord(long streamerId, string forbiddenWord)
             {

@@ -47,7 +47,7 @@
                 BotInUse : botInUse
             }),
             success: function (result) {
-                if (result == "success") {
+                if (result) {
                     if (botInUse == 1) {
                         $(this).prop("checked", true);
                     } else {
