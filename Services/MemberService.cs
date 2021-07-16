@@ -5,15 +5,18 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using TwitchChatBot.Models;
+using TwitchChatBot.Services;
 
 namespace TwitchChatBot.Service
 {
     public class MemberService
     {
-        private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
         private string DefaultIP { get; set; }
-        private string ClientSecret { get; set; }
         private string ConnectionString { get; set; }
+
+        private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
+        private string ClientSecret { get; set; }
+
 
         public MemberService(string ConnectionString, string DefaultIP, string ClientSecret)
         {
@@ -21,13 +24,63 @@ namespace TwitchChatBot.Service
             this.DefaultIP = DefaultIP;
             this.ClientSecret = ClientSecret;
         }
-        public MemberService()
-        {
-        }
 
-        private MySqlConnection GetConnection()
+        public MySqlConnection GetConnection()
         {
             return new MySqlConnection(ConnectionString);
+        }
+
+
+        /// <summary>
+        /// RefreshToken 값을 이용해 처음 BotToken 값을 Validate
+        /// </summary>
+        /// <param name="RefreshToken"></param>
+        /// <returns></returns>
+        public TwitchToken ValidateAccessToken(string RefreshToken)
+        {
+            string Url = "https://id.twitch.tv/oauth2/token";
+            var Client = new WebClient();
+            var Data = new NameValueCollection();
+            Data["grant_type"] = "refresh_token";
+            Data["client_id"] = ClientId;
+            Data["client_secret"] = this.ClientSecret;
+            Data["refresh_token"] = RefreshToken;
+
+            var Response = Client.UploadValues(Url, "POST", Data);
+            string Str = Encoding.Default.GetString(Response);
+            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+
+            return TwitchToken;
+        }
+
+        public Streamer FindStreamer(long StreamerId)
+        {
+            Streamer Streamer = new Streamer();
+            string SQL = $"SELECT * FROM streamer WHERE streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader())
+                    {
+                        while (Reader.Read())
+                            Streamer = new Streamer(
+                                Convert.ToInt64(Reader["streamer_id"]),
+                                Reader["channel_name"].ToString(),
+                                Reader["refresh_token"].ToString()
+                                );
+                    }
+                }
+                catch (MySqlException E)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(E.ToString());
+                }
+                Conn.Close();
+                return Streamer;
+            }
         }
 
 
@@ -39,7 +92,7 @@ namespace TwitchChatBot.Service
 
             Data["grant_type"] = "authorization_code";
             Data["client_id"] = ClientId;
-            Data["client_secret"] = this.ClientSecret;
+            Data["client_secret"] = ClientSecret;
             Data["redirect_uri"] = $"https://{DefaultIP}/member/index"; ;
             Data["code"] = Code;
 
@@ -67,27 +120,9 @@ namespace TwitchChatBot.Service
             return User;
         }
 
-        public TwitchToken ValidateAccessToken(Streamer Streamer)
-        {
-            string Url = "https://id.twitch.tv/oauth2/authorize";
-            var Client = new WebClient();
-            var Data = new NameValueCollection();
-            Data["grant_type"] = "refresh_token";
-            Data["client_id"] = ClientId;
-            Data["client_secret"] = this.ClientSecret;
-            Data["refresh_token"] = Streamer.RefreshToken;
-
-            var Response = Client.UploadValues(Url, "POST", Data);
-            string Str = Encoding.Default.GetString(Response);
-            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
-
-            return TwitchToken;
-        }
-
         public string GetRedirectURL()
         {
             string Url = "https://id.twitch.tv/oauth2/authorize";
-            string ClientId = MemberService.ClientId;
             string RedirectUri = $"https://{DefaultIP}/member/index";
             string ResponseType = "code";
             return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
@@ -126,7 +161,6 @@ namespace TwitchChatBot.Service
                 return Result;
             }
         }
-
 
         private int InsertStreamerDetail(MySqlConnection Conn, long InheritedKey)
         {

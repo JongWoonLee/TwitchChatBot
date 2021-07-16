@@ -5,11 +5,13 @@ using OpenQA.Selenium.Chrome;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using TwitchChatBot.Models;
+using TwitchChatBot.Services;
 
 namespace TwitchChatBot.Service
 {
@@ -18,31 +20,51 @@ namespace TwitchChatBot.Service
         private const string Ip = "irc.chat.twitch.tv";
         private const int Port = 6667;
         private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
+        public TwitchToken BotToken { get; set; }
         private string ConnectionString { get; set; }
+
         private string ClientSecret { get; set; }
 
-        public TwitchToken BotToken { get; set; }
         public Dictionary<long, SimpleTwitchBot> ManagedBot { get; set; }
         private Dictionary<string, Command> Commands;
 
-        private MySqlConnection GetConnection()
-        {
-            return new MySqlConnection(ConnectionString);
-        }
 
 
         public ThreadExecutorService(string ConnectionString, string ClientSecret)
         {
             this.ConnectionString = ConnectionString;
             this.ClientSecret = ClientSecret;
-            this.BotToken = ValidateAccessToken(FindBotRefreshToken());
             this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
+            this.BotToken = ValidateAccessToken(FindBotRefreshToken());
             this.Commands = FindCommands();
             Initialize();
         }
 
+        /// <summary>
+        /// RefreshToken 값을 이용해 처음 BotToken 값을 Validate
+        /// </summary>
+        /// <param name="RefreshToken"></param>
+        /// <returns></returns>
+        public TwitchToken ValidateAccessToken(string RefreshToken)
+        {
+            string Url = "https://id.twitch.tv/oauth2/token";
+            var Client = new WebClient();
+            var Data = new NameValueCollection();
+            Data["grant_type"] = "refresh_token";
+            Data["client_id"] = ClientId;
+            Data["client_secret"] = this.ClientSecret;
+            Data["refresh_token"] = RefreshToken;
+
+            var Response = Client.UploadValues(Url, "POST", Data);
+            string Str = Encoding.Default.GetString(Response);
+            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+
+            return TwitchToken;
+        }
+
         private void Initialize()
         {
+            const int BotInit = 5;
             string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id;";
             using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
@@ -60,7 +82,7 @@ namespace TwitchChatBot.Service
                             var Password = "oauth:" + BotToken.AccessToken;
                             var IrcClient = new IrcClient(Ip, Port, Channel, "oauth:" + BotToken.AccessToken, Channel);
                             int BotInitCounter = 0;
-                            while (BotInitCounter < 5)
+                            while (BotInitCounter < BotInit)
                             {
                                 if (IrcClient.InitSuccess)
                                     break;
@@ -71,7 +93,8 @@ namespace TwitchChatBot.Service
                                 IrcClient,
                                 new PingSender(IrcClient),
                                 this.Commands,
-                                ConnectionString   
+                                ConnectionString,
+                                new TwitchToken(FindStreamer(StreamerId).RefreshToken)
                                 )); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                             Thread.Sleep(1);
                         }
@@ -87,6 +110,41 @@ namespace TwitchChatBot.Service
                     Console.WriteLine(E.Message);
                 }
                 Conn.Close();
+            }
+        }
+
+        public MySqlConnection GetConnection()
+        {
+            return new MySqlConnection(ConnectionString);
+        }
+
+        public Streamer FindStreamer(long StreamerId)
+        {
+            Streamer Streamer = new Streamer();
+            string SQL = $"SELECT * FROM streamer WHERE streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader())
+                    {
+                        while (Reader.Read())
+                            Streamer = new Streamer(
+                                Convert.ToInt64(Reader["streamer_id"]),
+                                Reader["channel_name"].ToString(),
+                                Reader["refresh_token"].ToString()
+                                );
+                    }
+                }
+                catch (MySqlException E)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(E.ToString());
+                }
+                Conn.Close();
+                return Streamer;
             }
         }
 
@@ -124,29 +182,7 @@ namespace TwitchChatBot.Service
             }
         }
 
-        /// <summary>
-        /// RefreshToken 값을 이용해 처음 BotToken 값을 Validate
-        /// </summary>
-        /// <param name="RefreshToken"></param>
-        /// <returns></returns>
-        public TwitchToken ValidateAccessToken(string RefreshToken)
-        {
-            string Url = "https://id.twitch.tv/oauth2/token";
-            var Client = new WebClient();
-            var Data = new NameValueCollection();
-            Data["grant_type"] = "refresh_token";
-            Data["client_id"] = ClientId;
-            Data["client_secret"] = this.ClientSecret;
-            Data["refresh_token"] = RefreshToken;
-
-            var Response = Client.UploadValues(Url, "POST", Data);
-            string Str = Encoding.Default.GetString(Response);
-            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
-
-            return TwitchToken;
-        }
-
-        public void ValidateAccessTokenEveryHour()
+        public void ValidateBotTokenEveryHour()
         {
             string Url = "https://id.twitch.tv/oauth2/token";
             var Client = new WebClient();
@@ -160,6 +196,8 @@ namespace TwitchChatBot.Service
             string Str = Encoding.Default.GetString(Response);
             this.BotToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
         }
+
+        // Twitch Token을 받아서 Refresh 하게 바뀐다고 치면 지금까지는 Bot 을 등록할때 Login을 해서 가지고 온거니까 가지고 온 데이터를 기반으로 RefreshToken값을 가져오는게 중요하겠다.
 
         private string FindBotRefreshToken()
         {
@@ -191,7 +229,7 @@ namespace TwitchChatBot.Service
             }
         }
 
-        public void RegisterBot(long Id, string UserName, string Channel)
+        public void RegisterBot(long Id, string UserName, string Channel, TwitchToken TwitchToken)
         {
             var IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
             int BotInitCounter = 0;
@@ -208,7 +246,8 @@ namespace TwitchChatBot.Service
                     IrcClient,
                     new PingSender(IrcClient),
                     this.Commands,
-                    ConnectionString
+                    ConnectionString,
+                    TwitchToken
                     ));
             }
             catch (ArgumentException E)
@@ -241,10 +280,10 @@ namespace TwitchChatBot.Service
         public void UpdateCommandData()
         {
             string Url = "https://corona-live.com/";
-            ChromeOptions Options = new ChromeOptions();
-            Options.AddArgument("headless");
+            //ChromeOptions Options = new ChromeOptions();
+            //Options.AddArgument("headless");
 
-            using (IWebDriver driver = new ChromeDriver(Options))
+            using (IWebDriver driver = new ChromeDriver())
             {
                 try
                 {
@@ -263,6 +302,12 @@ namespace TwitchChatBot.Service
                 finally
                 {
                     driver.Quit();
+                    Process[] chromeDriverProcesses = Process.GetProcessesByName("chromedriver");
+
+                    foreach (var chromeDriverProcess in chromeDriverProcesses)
+                    {
+                        chromeDriverProcess.Kill();
+                    }
                 }
             }
         }

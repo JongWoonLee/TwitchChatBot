@@ -19,5 +19,19 @@ namespace TwitchChatBot.Models
         [JsonProperty(PropertyName = "token_type")]
         public string TokenType { get; set; }
 
+        public TwitchToken()
+        {
+        }
+
+        public TwitchToken(string AccessToken, string RefreshToken)
+        {
+            this.AccessToken = AccessToken;
+            this.RefreshToken = RefreshToken;
+        }
+
+        public TwitchToken(string RefreshToken)
+        {
+            this.RefreshToken = RefreshToken;
+        }
     }
 }

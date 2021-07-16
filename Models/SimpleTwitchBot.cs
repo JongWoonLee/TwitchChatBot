@@ -37,16 +37,16 @@ namespace TwitchChatBot.Models
             Thread = new Thread(new ThreadStart(this.Run));
             Start();
         }
-        public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString)
-        {
-            this.IrcClient = IrcClient;
-            this.PingSender = PingSender;
-            this.Commands = Commands;
-            this.ConnectionString = ConnectionString;
-            this.ThreadDoWorkRun = true;
-            Thread = new Thread(new ThreadStart(this.Run));
-            Start();
-        }
+        //public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString)
+        //{
+        //    this.IrcClient = IrcClient;
+        //    this.PingSender = PingSender;
+        //    this.Commands = Commands;
+        //    this.ConnectionString = ConnectionString;
+        //    this.ThreadDoWorkRun = true;
+        //    Thread = new Thread(new ThreadStart(this.Run));
+        //    Start();
+        //}
 
         /// <summary>
         /// 쓰레드 시작

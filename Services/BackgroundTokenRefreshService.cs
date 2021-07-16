@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using TwitchChatBot.Models;
 
 namespace TwitchChatBot.Service
 {
@@ -28,8 +30,13 @@ namespace TwitchChatBot.Service
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                ThreadExecutorService.ValidateAccessTokenEveryHour(); // TimeSpan마다 주기적으로 해야할 작업.
-                ThreadExecutorService.UpdateCommandData();
+                ThreadExecutorService.ValidateBotTokenEveryHour(); // TimeSpan마다 주기적으로 해야할 작업.
+                var ManagedBot = ThreadExecutorService.ManagedBot;
+                foreach(long Key in ManagedBot.Keys)
+                {
+                    ManagedBot[Key].StreamerToken = ThreadExecutorService.ValidateAccessToken(ManagedBot[Key].StreamerToken.RefreshToken);
+                    //kvp.Value.StreamerToken = ThreadExecutorService.ValidateAccessToken(kvp.Value.StreamerToken.RefreshToken);
+                }
                 await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
             }
         }
