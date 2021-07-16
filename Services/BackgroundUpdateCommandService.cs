@@ -1,20 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TwitchChatBot.Service;
 
-namespace TwitchChatBot.Service
+namespace TwitchChatBot.Services
 {
-    public class BackgroundTokenRefreshService : HostedService
+    public class BackgroundUpdateCommandService : HostedService
     {
-        public string BotRefreshToken;
-
         public ThreadExecutorService ThreadExecutorService { get; set; }
 
         /// <summary>
-        /// Background에서 BotToken을 Refresh 해주는 Service
+        /// ThreadExecutorService 의 Command 값을 변경하기 위한 Service
         /// </summary>
         /// <param name="ThreadExecutorService">ThreadExecutorService에 접근해서 BotToken값을 설정해야 하므로 주입</param>
-        public BackgroundTokenRefreshService(ThreadExecutorService ThreadExecutorService)
+        public BackgroundUpdateCommandService(ThreadExecutorService ThreadExecutorService)
         {
             this.ThreadExecutorService = ThreadExecutorService;
         }
@@ -28,9 +29,8 @@ namespace TwitchChatBot.Service
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                ThreadExecutorService.ValidateAccessTokenEveryHour(); // TimeSpan마다 주기적으로 해야할 작업.
                 ThreadExecutorService.UpdateCommandData();
-                await Task.Delay(TimeSpan.FromHours(1), cancellationToken);
+                await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
             }
         }
     }

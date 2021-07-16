@@ -59,11 +59,11 @@ namespace TwitchChatBot.Controllers
         [HttpGet, Route("/member/startbot")]
         public IActionResult StartBot()
         {
-            string userId = Request.Cookies["user_id"];
-            if (!string.IsNullOrWhiteSpace(userId))
+            string UserId = Request.Cookies["user_id"];
+            if (!string.IsNullOrWhiteSpace(UserId))
             {
-                int result = MemberService.FindBotInUseByUserId(userId);
-                ViewData["result"] = result;
+                int Result = MemberService.FindBotInUseByUserId(UserId);
+                ViewData["result"] = Result;
             }
             return View();
         }
@@ -76,27 +76,27 @@ namespace TwitchChatBot.Controllers
         public string StartBotPost()
         {
             int BotInUse = 0;
-            string result = null;
-            using (var reader = new StreamReader(Request.Body))
+            string Result = null;
+            using (var Reader = new StreamReader(Request.Body))
             {
-                var body = reader.ReadToEndAsync();
-                JObject JObject = JObject.Parse(body.Result);
+                var Body = Reader.ReadToEndAsync();
+                JObject JObject = JObject.Parse(Body.Result);
                 BotInUse = (int)JObject["BotInUse"]; // Request에 들어있는 BotInUse
             }
             string userId = Request.Cookies["user_id"];
             long lUserId = Convert.ToInt64(userId);
-            string channelName = Request.Cookies["channel_name"];
+            string ChannelName = Request.Cookies["channel_name"];
             if (BotInUse == 1) // 봇을 사용 한다면
             {
                 MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
-                ThreadExecutorService.RegisterBot(lUserId, "simple_irc_bot", channelName);
+                ThreadExecutorService.RegisterBot(lUserId, ChannelName, ChannelName);
             }
             else // 봇을 사용 안한다면
             {
                 MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
-                result = ThreadExecutorService.DisposeBot(lUserId);
+                Result = ThreadExecutorService.DisposeBot(lUserId);
             }
-            return result;
+            return Result;
         }
 
         [HttpGet, Route("/member/logout")]

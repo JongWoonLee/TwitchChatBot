@@ -11,6 +11,8 @@ namespace TwitchChatBot.Models
     {
         public string UserName;
         public string Channel;
+        public bool InitSuccess;
+
 
         private TcpClient TcpClient;
         private StreamReader InputStream;
@@ -32,25 +34,29 @@ namespace TwitchChatBot.Models
                 this.Channel = Channel;
 
                 TcpClient = new TcpClient(Ip, Port);
+                if(TcpClient.Connected) // Connected 는 항상 true 만 뱉는다.. 뭐가 문제지
+                {
+                    InputStream = new StreamReader(TcpClient.GetStream());
+                    InputStream.BaseStream.ReadTimeout = 1000; // 500 이게 기본값..
+                    OutputStream = new StreamWriter(TcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true };
 
-                InputStream = new StreamReader(TcpClient.GetStream());
-                //InputStream.BaseStream.ReadTimeout = 500; 이게 기본값..
-                OutputStream = new StreamWriter(TcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true };
-
-                // Try to join the room
-                OutputStream.WriteLineAsync("PASS " + Password);
-                OutputStream.WriteLineAsync("NICK " + UserName);
-                OutputStream.WriteLineAsync("USER " + UserName + " 8 * :" + UserName);
-                OutputStream.WriteLineAsync("JOIN #" + Channel);
-                OutputStream.FlushAsync();
-            }
-            catch (IOException E)
-            {
-                throw E;
+                    // Channel에 접속해 메세지를 읽어오기 위한 처음 메세지
+                    OutputStream.WriteLine("PASS " + Password);
+                    OutputStream.WriteLine("NICK " + UserName);
+                    OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName);
+                    OutputStream.WriteLine("JOIN #" + Channel);
+                    OutputStream.Flush();
+                    InitSuccess = true;
+                }
+                else
+                {
+                    CloseTcpClient();
+                    InitSuccess = false;
+                }
             }
             catch (Exception E)
             {
-                Console.WriteLine("Error occurred in IRCClient Initialize : " + E.Message);
+                Console.WriteLine("Error occurred in IrcClient Initialize : " + E.Message);
             }
         }
 

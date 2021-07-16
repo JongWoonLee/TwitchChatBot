@@ -14,6 +14,10 @@ namespace TwitchChatBot.Models
         public Dictionary<string, Command> Commands;
         private string ConnectionString;
         private bool ThreadDoWorkRun;
+        public TwitchToken StreamerToken;
+
+        private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
+
 
         /// <summary>
         /// 주입받은 값을 이용해 초기 세팅을 한다.
@@ -22,6 +26,17 @@ namespace TwitchChatBot.Models
         /// <param name="PingSender">IrcClient에 주기적으로 핑을 보내는 PingSender</param>
         /// <param name="Commands">봇 기본 명령어</param>
         /// <param name="ConnectionString">Connection생성을 위한 ConnectionString</param>
+        public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
+        {
+            this.IrcClient = IrcClient;
+            this.PingSender = PingSender;
+            this.Commands = Commands;
+            this.ConnectionString = ConnectionString;
+            this.ThreadDoWorkRun = true;
+            this.StreamerToken = StreamerToken;
+            Thread = new Thread(new ThreadStart(this.Run));
+            Start();
+        }
         public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString)
         {
             this.IrcClient = IrcClient;
@@ -162,5 +177,22 @@ namespace TwitchChatBot.Models
                 this.ForbiddenWordList = forbiddenWord;
             }
         }
+
+        //public TwitchToken ValidateAccessToken(string RefreshToken)
+        //{
+        //    string Url = "https://id.twitch.tv/oauth2/token";
+        //    var Client = new WebClient();
+        //    var Data = new NameValueCollection();
+        //    Data["grant_type"] = "refresh_token";
+        //    Data["client_id"] = ClientId;
+        //    Data["client_secret"] = this.ClientSecret;
+        //    Data["refresh_token"] = RefreshToken;
+
+        //    var Response = Client.UploadValues(Url, "POST", Data);
+        //    string Str = Encoding.Default.GetString(Response);
+        //    TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+
+        //    return TwitchToken;
+        //}
     }
 }

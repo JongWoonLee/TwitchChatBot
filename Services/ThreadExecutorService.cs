@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using TwitchChatBot.Models;
 
 namespace TwitchChatBot.Service
@@ -55,14 +56,24 @@ namespace TwitchChatBot.Service
                         {
                             var StreamerId = Convert.ToInt64(Reader["streamer_id"]);
                             var Channel = Reader["channel_name"].ToString();
+                            //var RefreshToken = Reader["refresh_token"].ToString();
                             var Password = "oauth:" + BotToken.AccessToken;
-                            IrcClient IrcClient = new IrcClient(Ip, Port, Channel, Password, Channel);
+                            var IrcClient = new IrcClient(Ip, Port, Channel, "oauth:" + BotToken.AccessToken, Channel);
+                            int BotInitCounter = 0;
+                            while (BotInitCounter < 5)
+                            {
+                                if (IrcClient.InitSuccess)
+                                    break;
+                                IrcClient = new IrcClient(Ip, Port, Channel, "oauth:" + BotToken.AccessToken, Channel);
+                                BotInitCounter++;
+                            }
                             ManagedBot.Add(StreamerId, new SimpleTwitchBot(
                                 IrcClient,
                                 new PingSender(IrcClient),
                                 this.Commands,
-                                ConnectionString
+                                ConnectionString   
                                 )); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
+                            Thread.Sleep(1);
                         }
                     }
                 }
@@ -183,6 +194,14 @@ namespace TwitchChatBot.Service
         public void RegisterBot(long Id, string UserName, string Channel)
         {
             var IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
+            int BotInitCounter = 0;
+            while(BotInitCounter <5)
+            {
+                if (IrcClient.InitSuccess)
+                    break;
+                IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
+                BotInitCounter++;
+            }
             try
             {
                 ManagedBot.Add(Id, new SimpleTwitchBot(
@@ -223,8 +242,6 @@ namespace TwitchChatBot.Service
         {
             string Url = "https://corona-live.com/";
             ChromeOptions Options = new ChromeOptions();
-
-            Options = new ChromeOptions();
             Options.AddArgument("headless");
 
             using (IWebDriver driver = new ChromeDriver(Options))

@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TwitchChatBot.Service;
+using TwitchChatBot.Services;
 
 namespace TwitchChatBot
 {
@@ -28,7 +29,8 @@ namespace TwitchChatBot
             var clientSecret = Configuration.GetValue<string>("Client_Secret");
             services.Add(new ServiceDescriptor(typeof(MemberService), new MemberService(connectionString,Configuration.GetConnectionString("DefaultIP"), clientSecret)));
             services.Add(new ServiceDescriptor(typeof(ThreadExecutorService), new ThreadExecutorService(connectionString, clientSecret)));
-            services.AddSingleton<IHostedService, BackgroundTokenRefreshService>();
+            services.AddHostedService<BackgroundTokenRefreshService>();
+            services.AddHostedService<BackgroundUpdateCommandService>();
 
             services.AddControllersWithViews();
         } 
