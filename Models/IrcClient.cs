@@ -26,7 +26,7 @@ namespace TwitchChatBot.Models
         /// <param name="UserName">접속하는 유저명</param>
         /// <param name="Password">User Oauth AccessToken</param>
         /// <param name="Channel">접속할 채널</param>
-        public IrcClient(string Ip, int Port, string UserName, string Password, string Channel)
+        public IrcClient(string Ip, int Port, string UserName, string Channel)
         {
             try
             {
@@ -34,29 +34,32 @@ namespace TwitchChatBot.Models
                 this.Channel = Channel;
 
                 TcpClient = new TcpClient(Ip, Port);
-                if(TcpClient.Connected) // Connected 는 항상 true 만 뱉는다.. 뭐가 문제지
-                {
-                    InputStream = new StreamReader(TcpClient.GetStream());
-                    InputStream.BaseStream.ReadTimeout = 1000; // 500 이게 기본값..
-                    OutputStream = new StreamWriter(TcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true };
-
-                    // Channel에 접속해 메세지를 읽어오기 위한 처음 메세지
-                    OutputStream.WriteLine("PASS " + Password);
-                    OutputStream.WriteLine("NICK " + UserName);
-                    OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName);
-                    OutputStream.WriteLine("JOIN #" + Channel);
-                    OutputStream.Flush();
-                    InitSuccess = true;
-                }
-                else
-                {
-                    CloseTcpClient();
-                    InitSuccess = false;
-                }
+                //if(TcpClient.Connected) // Connected 는 항상 true 만 뱉는다.. 뭐가 문제지 client.poll이 해결해주진 않는데..
+                InputStream = new StreamReader(TcpClient.GetStream());
+                InputStream.BaseStream.ReadTimeout = 1000; // 500 이게 기본값..
+                OutputStream = new StreamWriter(TcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true };
+                
             }
             catch (Exception E)
             {
                 Console.WriteLine("Error occurred in IrcClient Initialize : " + E.Message);
+            }
+        }
+
+        public void SendFirstConnectMessage(string UserName, string Password, string Channel)
+        {
+            try
+            {
+                // Channel에 접속해 메세지를 읽어오기 위한 처음 메세지
+                OutputStream.WriteLine("PASS " + Password);
+                OutputStream.WriteLine("NICK " + UserName);
+                OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName); // 분리한다고 해결되진 않았다.. catch 에서 닫자고 했지만
+                OutputStream.WriteLine("JOIN #" + Channel);
+                OutputStream.Flush();
+            }
+            catch (Exception E)
+            {
+                Console.WriteLine("SendFirstConnectMessage : " + E.Message);
             }
         }
 
@@ -106,11 +109,8 @@ namespace TwitchChatBot.Models
         {
             try
             {
-                if(TcpClient.Connected)
-                {
-                    this.TcpClient.GetStream().Close();
-                    this.TcpClient.Close();
-                }
+                this.TcpClient.GetStream().Close(); // Connected는 항상 true 이므로 제거해보자..
+                this.TcpClient.Close();
             }
             catch (ObjectDisposedException E)
             {

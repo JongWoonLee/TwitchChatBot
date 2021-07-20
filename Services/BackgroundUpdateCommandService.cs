@@ -30,6 +30,7 @@ namespace TwitchChatBot.Services
             while (!cancellationToken.IsCancellationRequested)
             {
                 ThreadExecutorService.UpdateCommandData();
+
                 await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
             }
         }

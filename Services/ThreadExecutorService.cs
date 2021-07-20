@@ -64,7 +64,6 @@ namespace TwitchChatBot.Service
 
         private void Initialize()
         {
-            const int BotInit = 5;
             string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id;";
             using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
@@ -80,15 +79,8 @@ namespace TwitchChatBot.Service
                             var Channel = Reader["channel_name"].ToString();
                             //var RefreshToken = Reader["refresh_token"].ToString();
                             var Password = "oauth:" + BotToken.AccessToken;
-                            var IrcClient = new IrcClient(Ip, Port, Channel, "oauth:" + BotToken.AccessToken, Channel);
-                            int BotInitCounter = 0;
-                            while (BotInitCounter < BotInit)
-                            {
-                                if (IrcClient.InitSuccess)
-                                    break;
-                                IrcClient = new IrcClient(Ip, Port, Channel, "oauth:" + BotToken.AccessToken, Channel);
-                                BotInitCounter++;
-                            }
+                            var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
+                            IrcClient.SendFirstConnectMessage(Channel, "oauth:" + BotToken.AccessToken, Channel);
                             ManagedBot.Add(StreamerId, new SimpleTwitchBot(
                                 IrcClient,
                                 new PingSender(IrcClient),
@@ -231,15 +223,8 @@ namespace TwitchChatBot.Service
 
         public void RegisterBot(long Id, string UserName, string Channel, TwitchToken TwitchToken)
         {
-            var IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
-            int BotInitCounter = 0;
-            while(BotInitCounter <5)
-            {
-                if (IrcClient.InitSuccess)
-                    break;
-                IrcClient = new IrcClient(Ip, Port, UserName, "oauth:" + BotToken.AccessToken, Channel);
-                BotInitCounter++;
-            }
+            var IrcClient = new IrcClient(Ip, Port, UserName, Channel);
+            IrcClient.SendFirstConnectMessage(UserName, "oauth:" + BotToken.AccessToken, Channel);
             try
             {
                 ManagedBot.Add(Id, new SimpleTwitchBot(
@@ -282,6 +267,7 @@ namespace TwitchChatBot.Service
             string Url = "https://corona-live.com/";
             //ChromeOptions Options = new ChromeOptions();
             //Options.AddArgument("headless");
+            //using (IWebDriver driver = new ChromeDriver(Options))
 
             using (IWebDriver driver = new ChromeDriver())
             {

@@ -17,7 +17,8 @@ namespace TwitchChatBot.Models
         public TwitchToken StreamerToken;
 
         private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
-
+        private string ForbiddenWordList;
+        private long StreamerId;
 
         /// <summary>
         /// 주입받은 값을 이용해 초기 세팅을 한다.
@@ -34,6 +35,7 @@ namespace TwitchChatBot.Models
             this.ConnectionString = ConnectionString;
             this.ThreadDoWorkRun = true;
             this.StreamerToken = StreamerToken;
+            this.ForbiddenWordList = FindForbiddenWords();
             Thread = new Thread(new ThreadStart(this.Run));
             Start();
         }
@@ -72,19 +74,28 @@ namespace TwitchChatBot.Models
                 if (!string.IsNullOrWhiteSpace(Message))
                 {
                     Console.WriteLine(Message); // IRC 메세지를 출력
+                    
 
                     string pattern = $@":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
                     Match match = Regex.Match(Message.Trim(), pattern);
                     var v = match.Success;
                     if (match.Success && match.Groups[4].Value.Trim().Equals("PRIVMSG"))
                     {
+
+                        if (IsContainsForbiddenWord(Message))
+                        {
+                            Console.WriteLine(Message);
+                            IrcClient.SendPublicChatMessage($"/timeout {match.Groups[1].Value.Trim()}"); // 명령어 수정 요망 /msg 삭제랑
+                        // 메세지 삭제하고 경고주는 작업
+                        }
                         //match.Groups[1].Value.Trim(); // User
                         //match.Groups[4].Value.Trim().Equals("PRIVMSG"); // Message Type
                         //match.Groups[5].Value.Trim(); // Command Target IndexParseSign 뒤로 짜르면 저게 target인지 확인해야할듯(x 구현 할지 안할지 모름);
                         var RawCommand = match.Groups[5].Value.Trim();
                         int IntIndexParseSign = RawCommand.IndexOf(' ');
                         string CommandHead = IntIndexParseSign == -1 ? RawCommand : RawCommand.Substring(0, IntIndexParseSign); // Command
-
+                        //이걸 Pattern 화 해서 그게 맞는지를 읽어오는게 중요하겠네
+                        
                         foreach (KeyValuePair<string, Command> Cmd in Commands)
                         {
                             if (CommandHead.Equals(Cmd.Key))
@@ -140,8 +151,6 @@ namespace TwitchChatBot.Models
                     break;
             }
 
-
-
             return Result;
         }
 
@@ -161,21 +170,51 @@ namespace TwitchChatBot.Models
             return new MySqlConnection(ConnectionString);
         }
 
-        private List<ForbiddenWord> FindForbiddenWords()
+        private string FindForbiddenWords()
         {
-            List<ForbiddenWord> list = new List<ForbiddenWord>();
-            return list;
+            string ForbiddenWordList = "";
+            string SQL = "SELECT fw.forbidden_word FROM forbidden_word fw JOIN streamer s ON s.streamer_id  = fw.streamer_id ;";
+            using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader()) // Query 실행 결과를 읽어오는 ExecuteReader
+                    {
+                        while (Reader.Read())
+                        {
+                            ForbiddenWordList += $"{Reader["forbidden_word"]}|";
+                        }
+                        ForbiddenWordList.Substring(0, ForbiddenWordList.Length - 1);
+                    }
+                }
+                catch (MySqlException E)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(E.ToString());
+                }
+                Conn.Close();
+                return ForbiddenWordList;
+            }
         }
 
         private class ForbiddenWord
         {
             public long StreamerId { get; }
             public string ForbiddenWordList { get; set; }
-            ForbiddenWord(long streamerId, string forbiddenWord)
+            public ForbiddenWord(long streamerId, string forbiddenWord)
             {
                 this.StreamerId = streamerId;
                 this.ForbiddenWordList = forbiddenWord;
             }
+        }
+
+        private bool IsContainsForbiddenWord(string Message)
+        {
+            string Pattern = this.ForbiddenWordList;
+            Match Match = Regex.Match(Message.Trim(), Pattern , RegexOptions.IgnoreCase);
+            return Match.Success;
         }
 
         //public TwitchToken ValidateAccessToken(string RefreshToken)
