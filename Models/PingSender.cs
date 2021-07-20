@@ -48,9 +48,9 @@ namespace TwitchChatBot
                     IrcClient.SendIrcMessage("PING irc.twitch.tv");
                     Thread.Sleep(60000); // 1 minutes
                 }
-                catch (ThreadInterruptedException E)
+                catch (ThreadInterruptedException e)
                 {
-                    Console.WriteLine(E.Message);
+                    Console.WriteLine(e.Message);
                     Console.WriteLine("newThread inturrupted");
                 }
             }

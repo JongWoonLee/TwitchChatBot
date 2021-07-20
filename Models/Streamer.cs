@@ -24,5 +24,10 @@ namespace TwitchChatBot.Models
             this.ChannelName = ChannelName;
             this.RefreshToken = RefreshToken;
         }
+
+        public bool StreamerIsValid()
+        {
+            return string.IsNullOrWhiteSpace(ChannelName) || string.IsNullOrWhiteSpace(RefreshToken);
+        }
     }
 }

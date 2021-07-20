@@ -73,10 +73,10 @@ namespace TwitchChatBot.Service
                                 );
                     }
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
                 Conn.Close();
                 return Streamer;
@@ -126,6 +126,7 @@ namespace TwitchChatBot.Service
             string RedirectUri = $"https://{DefaultIP}/member/index";
             string ResponseType = "code";
             return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
+            //return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email channel:moderate channel_editor"; // User Dont need but Raid need channel_editor
         }
 
         public int InsertStreamer(TwitchToken TwitchToken, User User)
@@ -152,10 +153,10 @@ namespace TwitchChatBot.Service
                         Console.WriteLine("Insert Fail!!");
                     }
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
                 Conn.Close();
                 return Result;
@@ -201,10 +202,10 @@ namespace TwitchChatBot.Service
                         Console.WriteLine("Update Fail!!");
                     }
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
                 Conn.Close();
                 return Result;
@@ -226,10 +227,10 @@ namespace TwitchChatBot.Service
                     MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
                     Result = Convert.ToInt32(Cmd.ExecuteScalar());
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
                 Conn.Close();
                 return Result;

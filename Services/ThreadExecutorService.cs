@@ -55,11 +55,20 @@ namespace TwitchChatBot.Service
             Data["client_secret"] = this.ClientSecret;
             Data["refresh_token"] = RefreshToken;
 
-            var Response = Client.UploadValues(Url, "POST", Data);
-            string Str = Encoding.Default.GetString(Response);
-            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+            try
+            {
+                var Response = Client.UploadValues(Url, "POST", Data);
+                string Str = Encoding.Default.GetString(Response);
+                TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
 
-            return TwitchToken;
+                return TwitchToken;
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                return null;
+            }
         }
 
         private void Initialize()
@@ -82,6 +91,7 @@ namespace TwitchChatBot.Service
                             var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
                             IrcClient.SendFirstConnectMessage(Channel, "oauth:" + BotToken.AccessToken, Channel);
                             ManagedBot.Add(StreamerId, new SimpleTwitchBot(
+                                StreamerId,
                                 IrcClient,
                                 new PingSender(IrcClient),
                                 this.Commands,
@@ -92,14 +102,14 @@ namespace TwitchChatBot.Service
                         }
                     }
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
-                catch (ArgumentException E)
+                catch (ArgumentException e)
                 {
-                    Console.WriteLine(E.Message);
+                    Console.WriteLine(e.Message);
                 }
                 Conn.Close();
             }
@@ -130,10 +140,10 @@ namespace TwitchChatBot.Service
                                 );
                     }
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
                 Conn.Close();
                 return Streamer;
@@ -211,10 +221,10 @@ namespace TwitchChatBot.Service
                         Console.WriteLine("Bot Cannot Be Found");
                     }
                 }
-                catch (MySqlException E)
+                catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(E.ToString());
+                    Console.WriteLine(e.ToString());
                 }
                 Conn.Close();
                 return BotToken;
@@ -228,6 +238,7 @@ namespace TwitchChatBot.Service
             try
             {
                 ManagedBot.Add(Id, new SimpleTwitchBot(
+                    Id,
                     IrcClient,
                     new PingSender(IrcClient),
                     this.Commands,
@@ -235,9 +246,9 @@ namespace TwitchChatBot.Service
                     TwitchToken
                     ));
             }
-            catch (ArgumentException E)
+            catch (ArgumentException e)
             {
-                Console.WriteLine(E.Message);
+                Console.WriteLine(e.Message);
             }
         }
 
@@ -255,9 +266,9 @@ namespace TwitchChatBot.Service
                     return "success";
                 }
             }
-            catch (ArgumentNullException E)
+            catch (ArgumentNullException e)
             {
-                Console.WriteLine(E.Message);
+                Console.WriteLine(e.Message);
             }
             return "";
         }

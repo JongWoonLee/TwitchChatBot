@@ -34,15 +34,13 @@ namespace TwitchChatBot.Models
                 this.Channel = Channel;
 
                 TcpClient = new TcpClient(Ip, Port);
-                //if(TcpClient.Connected) // Connected 는 항상 true 만 뱉는다.. 뭐가 문제지 client.poll이 해결해주진 않는데..
-                InputStream = new StreamReader(TcpClient.GetStream());
-                InputStream.BaseStream.ReadTimeout = 1000; // 500 이게 기본값..
-                OutputStream = new StreamWriter(TcpClient.GetStream()) { NewLine = "\r\n", AutoFlush = true };
-                
+                NetworkStream Stream = TcpClient.GetStream();
+                InputStream = new StreamReader(Stream);
+                OutputStream = new StreamWriter(Stream) { NewLine = "\r\n", AutoFlush = true };
             }
-            catch (Exception E)
+            catch (Exception e)
             {
-                Console.WriteLine("Error occurred in IrcClient Initialize : " + E.Message);
+                Console.WriteLine("Error occurred in IrcClient Initialize : " + e.Message);
             }
         }
 
@@ -57,9 +55,9 @@ namespace TwitchChatBot.Models
                 OutputStream.WriteLine("JOIN #" + Channel);
                 OutputStream.Flush();
             }
-            catch (Exception E)
+            catch (Exception e)
             {
-                Console.WriteLine("SendFirstConnectMessage : " + E.Message);
+                Console.WriteLine("SendFirstConnectMessage : " + e.Message);
             }
         }
 
@@ -70,9 +68,9 @@ namespace TwitchChatBot.Models
                 OutputStream.WriteLineAsync(Message);
                 OutputStream.FlushAsync();
             }
-            catch (Exception E)
+            catch (Exception e)
             {
-                Console.WriteLine("SendIrcMessage : " + E.Message);
+                Console.WriteLine("SendIrcMessage : " + e.Message);
             }
         }
 
@@ -83,26 +81,29 @@ namespace TwitchChatBot.Models
                 SendIrcMessage(":" + UserName + "!" + UserName + "@" + UserName +
                 ".tmi.twitch.tv PRIVMSG #" + Channel + " :" + Message);
             }
-            catch (Exception E)
+            catch (Exception e)
             {
-                Console.WriteLine(E.Message);
+                Console.WriteLine(e.Message);
             }
         }
 
         public async Task<string> ReadMessage()
         {
-            try
             {
-                return await InputStream.ReadLineAsync();
-            }
-            catch (IOException IOE)
-            {
-                CloseTcpClient();
-                return "Error receiving Read IOE " + IOE.Message;
-            }
-            catch (Exception E)
-            {
-                return "Error receiving read message: " + E.Message;
+                try
+                {
+                    return await InputStream.ReadLineAsync();
+                }
+                catch (IOException ioe)
+                {
+                    CloseTcpClient();
+                    //return "Error receiving Read IOE " + IOE.Message;
+                    throw ioe;
+                }
+                catch (Exception e)
+                {
+                    return "Error receiving read message: " + e.Message;
+                }
             }
         }
         public void CloseTcpClient()
@@ -112,10 +113,21 @@ namespace TwitchChatBot.Models
                 this.TcpClient.GetStream().Close(); // Connected는 항상 true 이므로 제거해보자..
                 this.TcpClient.Close();
             }
-            catch (ObjectDisposedException E)
+            catch (ObjectDisposedException e)
             {
-                Console.WriteLine("Object Dispose Exception: " + E.Message);
+                Console.WriteLine("Object Dispose Exception: " + e.Message);
             }
+            catch (InvalidOperationException e)
+            {
+                Console.WriteLine("InvalidOperationException: " + e.ToString());
+            }
+        }
+
+        public bool IsDataAvailable()
+        {
+            NetworkStream Stream = (NetworkStream)InputStream.BaseStream;
+            Console.WriteLine("DataAvailable : " + Stream.DataAvailable);
+            return Stream.DataAvailable;
         }
 
         //Outside of start we need to define ValidateServerCertificate

@@ -40,8 +40,8 @@ namespace TwitchChatBot.Controllers
             }
             TwitchToken TwitchToken = MemberService.ConnectReleasesWebClient(Code); // code 가 있으면 Token을 가지고 온 뒤
             User User = MemberService.ValidatingRequests(TwitchToken.AccessToken); // Token 을 이용해서 User data를 얻어오고
-            int InsertResult = MemberService.FindStreamer(User.UserId) == null ? 
-                MemberService.InsertStreamer(TwitchToken, User) : 0; // Streamer Table 에 Insert 유효하지 않은 Insert면 0 반환
+            int InsertResult = MemberService.FindStreamer(User.UserId).StreamerIsValid() ? 
+            MemberService.InsertStreamer(TwitchToken, User) : 0; // Streamer Table 에 Insert 유효하지 않은 Insert면 0 반환
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"])) // Cookie 에 User정보가 없으면 저장.
             {
