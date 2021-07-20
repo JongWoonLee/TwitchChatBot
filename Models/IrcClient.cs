@@ -53,6 +53,8 @@ namespace TwitchChatBot.Models
                 OutputStream.WriteLine("NICK " + UserName);
                 OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName); // 분리한다고 해결되진 않았다.. catch 에서 닫자고 했지만
                 OutputStream.WriteLine("JOIN #" + Channel);
+                //OutputStream.WriteLine("CAP REQ :twitch.tv/commands");
+                OutputStream.WriteLine("CAP REQ :twitch.tv/tags");
                 OutputStream.Flush();
             }
             catch (Exception e)

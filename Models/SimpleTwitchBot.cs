@@ -20,6 +20,7 @@ namespace TwitchChatBot.Models
         private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
         private string ForbiddenWordList;
         private long StreamerId;
+        private string Channel;
 
         /// <summary>
         /// 주입받은 값을 이용해 초기 세팅을 한다.
@@ -30,6 +31,21 @@ namespace TwitchChatBot.Models
         /// <param name="ConnectionString">Connection생성을 위한 ConnectionString</param>
         public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
         {
+            this.StreamerId = StreamerId;
+            this.IrcClient = IrcClient;
+            this.PingSender = PingSender;
+            this.Commands = Commands;
+            this.ConnectionString = ConnectionString;
+            this.ThreadDoWorkRun = true;
+            this.StreamerToken = StreamerToken;
+            this.ForbiddenWordList = FindForbiddenWords();
+            Thread = new Thread(new ThreadStart(this.Run));
+            Start();
+        }
+
+        public SimpleTwitchBot(string Channel, long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
+        {
+            this.Channel = Channel;
             this.StreamerId = StreamerId;
             this.IrcClient = IrcClient;
             this.PingSender = PingSender;
@@ -77,10 +93,10 @@ namespace TwitchChatBot.Models
                     if (!string.IsNullOrWhiteSpace(Message))
                     {
                         Console.WriteLine(Message); // IRC 메세지를 출력
-
                         //    // 메세지 예시:
                         //    // ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
                         string pattern = $@":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
+                        //string pattern = $@":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:(!?\w+)";
                         Match match = Regex.Match(Message.Trim(), pattern);
                         var v = match.Success;
                         if (match.Success && match.Groups[4].Value.Trim().Equals("PRIVMSG"))
@@ -89,19 +105,31 @@ namespace TwitchChatBot.Models
                             if (IsContainsForbiddenWord(Message))
                             {
                                 Console.WriteLine(Message);
-                                IrcClient.SendPublicChatMessage($"/timeout {match.Groups[1].Value.Trim()} 10"); // 명령어 수정 요망 /msg 삭제랑
-                                                                                                                // 메세지 삭제하고 경고주는 작업
+                                
+                                IrcClient.SendPublicChatMessage($"/delete e8ecb3dd-8b84-460e-aacf-2d2d23cb9fa7"); // 명령어 수정 요망 /msg 삭제랑
+                                IrcClient.SendPublicChatMessage($"지워졌나요"); // 명령어 수정 요망 /msg 삭제랑
+                                IrcClient.SendIrcMessage("@login=whddns262;target-msg-id=e8ecb3dd-8b84-460e-aacf-2d2d23cb9fa7 :tmi.twitch.tv CLEARMSG #whddns262 :!retry");
+                                //IrcClient.SendPublicChatMessage($"/timeout {match.Groups[1].Value.Trim()} 10"); // 명령어 수정 요망 /msg 삭제랑
                                 // @login=<User>;target-msg-id=<target-msg-id> :tmi.twitch.tv CLEARMSG #<channel> :<message>
-                                // 실험삼아 User부터 보내볼까
                             }
+                            //if(Message.Contains("!raid"))
+                            //{
+                            //    string Ip = "irc.chat.twitch.tv";
+                            //    int Port = 6667;
+                            //    var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
+                            //    IrcClient.SendFirstConnectMessage(Channel, "oauth:"+StreamerToken.AccessToken, Channel);
+                            //    IrcClient.SendPublicChatMessage("화자는 누구인가");
+                            //    IrcClient.SendPublicChatMessage("/raid mbnv262");
+                            //}
                             //match.Groups[1].Value.Trim(); // User
                             //match.Groups[4].Value.Trim().Equals("PRIVMSG"); // Message Type
                             //match.Groups[5].Value.Trim(); // Command Target IndexParseSign 뒤로 짜르면 저게 target인지 확인해야할듯(x 구현 할지 안할지 모름);
                             var RawCommand = match.Groups[5].Value.Trim();
                             int IntIndexParseSign = RawCommand.IndexOf(' ');
                             string CommandHead = IntIndexParseSign == -1 ? RawCommand : RawCommand.Substring(0, IntIndexParseSign); // Command
-                                                                                                                                    //이걸 Pattern 화 해서 그게 맞는지를 읽어오는게 중요하겠네
+                                                                                                                                    //이걸 Pattern 화 해서 그게 맞는지를 읽어오는게 
 
+                            // KeyValuePair 순회가 아니라 startsWith ! 인지를 확인해서 Command를 돌기
                             foreach (KeyValuePair<string, Command> Cmd in Commands)
                             {
                                 if (CommandHead.Equals(Cmd.Key))
@@ -186,7 +214,7 @@ namespace TwitchChatBot.Models
                         {
                             ForbiddenWordList += $"{Reader["forbidden_word"]}|";
                         }
-                        ForbiddenWordList = ForbiddenWordList.Substring(0, ForbiddenWordList.Length - 1);
+                        ForbiddenWordList = ForbiddenWordList.Substring(0, ForbiddenWordList.Length == 0? 0 : ForbiddenWordList.Length - 1);
                     }
                 }
                 catch (MySqlException e)
@@ -213,25 +241,13 @@ namespace TwitchChatBot.Models
         private bool IsContainsForbiddenWord(string Message)
         {
             string Pattern = this.ForbiddenWordList;
+            if(string.IsNullOrWhiteSpace(Pattern))
+            {
+                return false;
+            }
             Match Match = Regex.Match(Message.Trim(), Pattern, RegexOptions.IgnoreCase);
             return Match.Success;
         }
 
-        //public TwitchToken ValidateAccessToken(string RefreshToken)
-        //{
-        //    string Url = "https://id.twitch.tv/oauth2/token";
-        //    var Client = new WebClient();
-        //    var Data = new NameValueCollection();
-        //    Data["grant_type"] = "refresh_token";
-        //    Data["client_id"] = ClientId;
-        //    Data["client_secret"] = this.ClientSecret;
-        //    Data["refresh_token"] = RefreshToken;
-
-        //    var Response = Client.UploadValues(Url, "POST", Data);
-        //    string Str = Encoding.Default.GetString(Response);
-        //    TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
-
-        //    return TwitchToken;
-        //}
     }
 }

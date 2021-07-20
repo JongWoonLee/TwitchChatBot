@@ -17,9 +17,6 @@ namespace TwitchChatBot.Models
         public int LongTextLimit { get; set; }
         public int LongTextLimitTimeout { get; set; }
         public int LongTextLimitLength { get; set; }
-        public bool SpecialCharacterLimit { get; set; }
-        public int SpecialCharacterLimitTimemout { get; set; }
-        public string LolNickname { get; set; }
 
     }
 }

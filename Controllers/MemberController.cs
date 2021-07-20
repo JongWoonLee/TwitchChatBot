@@ -53,6 +53,24 @@ namespace TwitchChatBot.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [HttpGet, Route("/member/details")]
+        public IActionResult Details()
+        {
+            string UserId = Request.Cookies["user_id"];
+            long lUserId = Convert.ToInt64(UserId);
+            //MemberService.FindStreamerDetail(lUserId);
+            return View();
+        }
+
+        [HttpPost, Route("/member/details")]
+        public string Details(StreamerDetail StreamerDetail)
+        {
+            string UserId = Request.Cookies["user_id"];
+            long lUserId = Convert.ToInt64(UserId);
+            //MemberService.UpdateStreamerDetail(lUserId);
+            return "success";
+        }
+
         /// <summary>
         /// Startbot View User 의 봇사용 정보를 가지고 이동
         /// </summary>
