@@ -91,6 +91,7 @@ namespace TwitchChatBot.Service
                             var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
                             IrcClient.SendFirstConnectMessage(Channel, "oauth:" + BotToken.AccessToken, Channel);
                             ManagedBot.Add(StreamerId, new SimpleTwitchBot(
+                                Channel,
                                 StreamerId,
                                 IrcClient,
                                 new PingSender(IrcClient),
@@ -238,6 +239,7 @@ namespace TwitchChatBot.Service
             try
             {
                 ManagedBot.Add(Id, new SimpleTwitchBot(
+                    Channel,
                     Id,
                     IrcClient,
                     new PingSender(IrcClient),

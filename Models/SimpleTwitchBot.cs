@@ -1,7 +1,11 @@
 ﻿using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -22,6 +26,21 @@ namespace TwitchChatBot.Models
         private long StreamerId;
         private string Channel;
 
+
+        //public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
+        //{
+        //    this.StreamerId = StreamerId;
+        //    this.IrcClient = IrcClient;
+        //    this.PingSender = PingSender;
+        //    this.Commands = Commands;
+        //    this.ConnectionString = ConnectionString;
+        //    this.ThreadDoWorkRun = true;
+        //    this.StreamerToken = StreamerToken;
+        //    this.ForbiddenWordList = FindForbiddenWords();
+        //    Thread = new Thread(new ThreadStart(this.Run));
+        //    Start();
+        //}
+
         /// <summary>
         /// 주입받은 값을 이용해 초기 세팅을 한다.
         /// </summary>
@@ -29,20 +48,6 @@ namespace TwitchChatBot.Models
         /// <param name="PingSender">IrcClient에 주기적으로 핑을 보내는 PingSender</param>
         /// <param name="Commands">봇 기본 명령어</param>
         /// <param name="ConnectionString">Connection생성을 위한 ConnectionString</param>
-        public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
-        {
-            this.StreamerId = StreamerId;
-            this.IrcClient = IrcClient;
-            this.PingSender = PingSender;
-            this.Commands = Commands;
-            this.ConnectionString = ConnectionString;
-            this.ThreadDoWorkRun = true;
-            this.StreamerToken = StreamerToken;
-            this.ForbiddenWordList = FindForbiddenWords();
-            Thread = new Thread(new ThreadStart(this.Run));
-            Start();
-        }
-
         public SimpleTwitchBot(string Channel, long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
         {
             this.Channel = Channel;
@@ -57,16 +62,6 @@ namespace TwitchChatBot.Models
             Thread = new Thread(new ThreadStart(this.Run));
             Start();
         }
-        //public SimpleTwitchBot(IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString)
-        //{
-        //    this.IrcClient = IrcClient;
-        //    this.PingSender = PingSender;
-        //    this.Commands = Commands;
-        //    this.ConnectionString = ConnectionString;
-        //    this.ThreadDoWorkRun = true;
-        //    Thread = new Thread(new ThreadStart(this.Run));
-        //    Start();
-        //}
 
         /// <summary>
         /// 쓰레드 시작
@@ -105,7 +100,7 @@ namespace TwitchChatBot.Models
                             if (IsContainsForbiddenWord(Message))
                             {
                                 Console.WriteLine(Message);
-                                
+
                                 IrcClient.SendPublicChatMessage($"/delete e8ecb3dd-8b84-460e-aacf-2d2d23cb9fa7"); // 명령어 수정 요망 /msg 삭제랑
                                 IrcClient.SendPublicChatMessage($"지워졌나요"); // 명령어 수정 요망 /msg 삭제랑
                                 IrcClient.SendIrcMessage("@login=whddns262;target-msg-id=e8ecb3dd-8b84-460e-aacf-2d2d23cb9fa7 :tmi.twitch.tv CLEARMSG #whddns262 :!retry");
@@ -159,7 +154,7 @@ namespace TwitchChatBot.Models
                     IrcClient.CloseTcpClient();
                     StopDoWork();
                 }
-                catch(IOException e)
+                catch (IOException e)
                 {
                     Console.WriteLine(e.ToString());
                     IrcClient.CloseTcpClient();
@@ -173,7 +168,8 @@ namespace TwitchChatBot.Models
             string Result = "";
             switch (CommandHead)
             {
-                case "":
+                case "투하":
+                    Result = IsLive().ToString();
                     break;
                 default:
                     break;
@@ -214,7 +210,7 @@ namespace TwitchChatBot.Models
                         {
                             ForbiddenWordList += $"{Reader["forbidden_word"]}|";
                         }
-                        ForbiddenWordList = ForbiddenWordList.Substring(0, ForbiddenWordList.Length == 0? 0 : ForbiddenWordList.Length - 1);
+                        ForbiddenWordList = ForbiddenWordList.Substring(0, ForbiddenWordList.Length == 0 ? 0 : ForbiddenWordList.Length - 1);
                     }
                 }
                 catch (MySqlException e)
@@ -241,7 +237,7 @@ namespace TwitchChatBot.Models
         private bool IsContainsForbiddenWord(string Message)
         {
             string Pattern = this.ForbiddenWordList;
-            if(string.IsNullOrWhiteSpace(Pattern))
+            if (string.IsNullOrWhiteSpace(Pattern))
             {
                 return false;
             }
@@ -249,5 +245,62 @@ namespace TwitchChatBot.Models
             return Match.Success;
         }
 
+        private bool IsLive()
+        {
+            try
+            {
+                string Url = "https://api.twitch.tv/helix/search/channels?query=" + Channel;
+                var Client = new WebClient();
+                Client.Headers.Add("Authorization", $"Bearer {StreamerToken.AccessToken}");
+                Client.Headers.Add("client-id", ClientId);
+                var Response = Client.DownloadString(Url);
+                JObject JSONResponse = JObject.Parse(Response);
+                var BroadcasterList = JSONResponse["data"].Select(r => JsonConvert.DeserializeObject<Broadcaster>(r.ToString())).ToList();
+                var Broadcaster = BroadcasterList.Find(b => b.BroadcasterLogin.Equals(Channel));
+                //BroadcasterList BroadcasterList = JsonConvert.DeserializeObject<BroadcasterList>(Response);
+                //Broadcaster b = Array.Find(BroadcasterList.Data, b => b.BroadcasterLogin.Equals(Channel));
+
+                return Broadcaster.IsLive == 1 ? true : false;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                return false;
+            }
+        }
+
+        private class Broadcaster
+        {
+            [JsonProperty(PropertyName = "id")]
+            private long Id { get; set; }
+            [JsonProperty(PropertyName = "broadcaster_login")]
+            public string BroadcasterLogin { get; set; }
+            [JsonProperty(PropertyName = "is_live")]
+            public int IsLive { get; set; }
+            [JsonProperty(PropertyName = "broadcaster_language")]
+            private string BroadcasterLanguage { get; set; }
+            [JsonProperty(PropertyName = "display_name")]
+            private string DisplayName { get; set; }
+            [JsonProperty(PropertyName = "game_id")]
+            private string GameId { get; set; }
+            [JsonProperty(PropertyName = "game_name")]
+            private string GameName { get; set; }
+            [JsonProperty(PropertyName = "tag_ids")]
+            private string[] TagIds { get; set; }
+            [JsonProperty(PropertyName = "thumbnail_url")]
+            private string ThumbnailUrl { get; set; }
+            [JsonProperty(PropertyName = "title")]
+            private string title { get; set; }
+            [JsonProperty(PropertyName = "started_at")]
+            private string StartedAt { get; set; }
+        }
+
+        //private class BroadcasterList
+        //{
+        //    [JsonProperty(PropertyName = "data")]
+        //    public Broadcaster[] Data { get; set; }
+        //    [JsonProperty(PropertyName = "pagination")]
+        //    private string Pagination;
+        //}
     }
 }

@@ -236,5 +236,43 @@ namespace TwitchChatBot.Service
                 return Result;
             }
         }
+
+        public StreamerDetail FindStreamerDetail(long StreamerId)
+        {
+            StreamerDetail StreamerDetail = null;
+            string SQL = $"SELECT * FROM streamer_detail WHERE streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader())
+                    {
+                        while (Reader.Read())
+                        {
+
+                        }
+                            //StreamerDetail = new StreamerDetail(
+                            //    Convert.ToInt64(Reader["streamer_id"]),
+                            //    Convert.ToInt32(Reader["channel_name"]),
+                            //    Reader["donation_link"].ToString(),
+                            //    Reader["greeting_message"].ToString(),
+                            //    Convert.ToInt32(Reader["forbidden_word_timeout"]),
+                            //    Convert.ToInt32(Reader["forbidden_word_limit"])
+                            //    );
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+            }
+
+
+            return StreamerDetail;
+        }
     }
 }
