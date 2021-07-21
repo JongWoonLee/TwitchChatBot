@@ -1,1 +1,76 @@
-﻿
+﻿@{
+    ViewData["Title"] = "Details Page";
+    var StreamerDetail = (StreamerDetail)ViewData["streamer_detail"];
+}
+
+<div class="form-group">
+    <label class="col-sm-2 col-sm-2 control-label2">채널명</label>
+    <input class="col-sm-2 channel-name" readonly type="text" value="@StreamerDetail.ChannelName" />
+</div>
+
+<div class="form-group">
+    <label class="col-sm-2 col-sm-2 control-label2">인사말</label>
+    <input class="col-sm-2 greeting-message" type="text" value="@StreamerDetail.GreetingMessage" />
+</div>
+
+<div class="form-group">
+    <label class="col-sm-2 col-sm-2 control-label2">도네이션 링크</label>
+    <input class="col-sm-2 donation-link" type="text" value="@StreamerDetail.DonationLink" />
+</div>
+
+
+@if (StreamerDetail.ForbiddenWordLimit)
+{
+    <div class="form-group">
+        <div class="form-check form-switch">
+            <label class="col-sm-2 col-sm-2 control-label2">금지어</label>
+            <input class="form-check-input forbidden-word-limit" type="checkbox" checked>
+        </div>
+        <label class="col-sm-2 col-sm-2 control-label2">채팅 금지 시간 : </label>
+        <input class="col-sm-2 forbidden-word-timeout" type="number" value=@StreamerDetail.ForbiddenWordTimeout />
+    </div>
+}
+else
+{ <div class="form-group">
+        <div class="form-check form-switch">
+            <label class="col-sm-2 col-sm-2 control-label2">금지어</label>
+            <input class="form-check-input forbidden-word-limit" type="checkbox">
+        </div>
+        <label class="col-sm-2 col-sm-2 control-label2">채팅 금지 시간</label>
+        <input class="col-sm-2 forbidden-word-timeout" type="number" value=@StreamerDetail.ForbiddenWordTimeout />
+    </div>
+}
+<button class="btn" style="background-color:#9147FF; color:white;">저장</button>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script>
+    // 누르는 순간 판단하므로 이벤트 시점은 눌린 뒤의 시점이다. check 상태에서 누른동작이면 checked false가 될것
+    $('.btn').click(function () {
+        //var cookie = document.cookie["user_id"];
+        var greetingMessage = $(".greeting-message").val();
+        var donationLink = $(".donation-link").val();
+        var forbiddenWordLimit = $(".forbidden-word-limit").is(":checked");
+        var forbiddenWordTimeout = $(".forbidden-word-timeout").val();
+
+
+        $.ajax({
+            type: "post",
+            url: "/member/details",
+            headers: {
+                "Content-type": "application/json;",
+            },
+            data: JSON.stringify({
+                //StreamerId : streamerId,
+                GreetingMessage : greetingMessage,
+                DonationLink : donationLink,
+                ForbiddenWordLimit : forbiddenWordLimit? 1:0,
+                ForbiddenWordTimeout : forbiddenWordTimeout
+            }),
+            success: function (result) {
+                alert(result);
+            }
+        });
+
+    })
+
+
+</script>

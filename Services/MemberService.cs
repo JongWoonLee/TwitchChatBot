@@ -240,7 +240,7 @@ namespace TwitchChatBot.Service
         public StreamerDetail FindStreamerDetail(long StreamerId)
         {
             StreamerDetail StreamerDetail = null;
-            string SQL = $"SELECT * FROM streamer_detail WHERE streamer_id = {StreamerId};";
+            string SQL = $"SELECT std.*, s.channel_name FROM streamer_detail std, streamer s WHERE std.streamer_id = s.streamer_id AND s.streamer_id = {StreamerId};";
             using (MySqlConnection Conn = GetConnection())
             {
                 try
@@ -251,16 +251,16 @@ namespace TwitchChatBot.Service
                     {
                         while (Reader.Read())
                         {
-
+                            StreamerDetail = new StreamerDetail(
+                                Convert.ToInt64(Reader["streamer_id"]),
+                                Reader["channel_name"].ToString(),
+                                Convert.ToInt32(Reader["bot_in_use"]),
+                                Reader["donation_link"].ToString(),
+                                Reader["greeting_message"].ToString(),
+                                Convert.ToInt32(Reader["forbidden_word_timeout"]),
+                                Convert.ToInt32(Reader["forbidden_word_limit"])
+                                );
                         }
-                            //StreamerDetail = new StreamerDetail(
-                            //    Convert.ToInt64(Reader["streamer_id"]),
-                            //    Convert.ToInt32(Reader["channel_name"]),
-                            //    Reader["donation_link"].ToString(),
-                            //    Reader["greeting_message"].ToString(),
-                            //    Convert.ToInt32(Reader["forbidden_word_timeout"]),
-                            //    Convert.ToInt32(Reader["forbidden_word_limit"])
-                            //    );
                     }
                 }
                 catch (MySqlException e)
@@ -273,6 +273,40 @@ namespace TwitchChatBot.Service
 
 
             return StreamerDetail;
+        }
+
+        public int UpdateStreamerDetail(StreamerDetail StreamerDetail)
+        {
+            int Result = 0;
+            string SQL = $"UPDATE streamer_detail SET donation_link = @DonationLink, greeting_message = @GreetingMessage, forbidden_word_limit = @ForbiddenWordLimit,forbidden_word_timeout = @ForbiddenWordTimeout WHERE streamer_id = {StreamerDetail.StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@DonationLink", StreamerDetail.DonationLink);
+                    Cmd.Parameters.AddWithValue("@GreetingMessage", StreamerDetail.GreetingMessage);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWordLimit", StreamerDetail.ForbiddenWordLimit);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWordTimeout", StreamerDetail.ForbiddenWordTimeout);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
+                    {
+                        Console.WriteLine("Update Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update Fail!!");
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
         }
     }
 }

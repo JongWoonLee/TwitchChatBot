@@ -58,17 +58,39 @@ namespace TwitchChatBot.Controllers
         {
             string UserId = Request.Cookies["user_id"];
             long lUserId = Convert.ToInt64(UserId);
-            //MemberService.FindStreamerDetail(lUserId);
+            ViewData["streamer_detail"] = MemberService.FindStreamerDetail(lUserId);
             return View();
         }
 
         [HttpPost, Route("/member/details")]
-        public string Details(StreamerDetail StreamerDetail)
+        public string DetailsPost()
         {
-            string UserId = Request.Cookies["user_id"];
-            long lUserId = Convert.ToInt64(UserId);
-            //MemberService.UpdateStreamerDetail(lUserId);
-            return "success";
+            StreamerDetail StreamerDetail = null;
+            try
+            {
+                using (var Reader = new StreamReader(Request.Body))
+                {
+                    var Body = Reader.ReadToEndAsync();
+                    string userId = Request.Cookies["user_id"];
+                    long StreamerId = Convert.ToInt64(userId);
+                    string ChannelName = Request.Cookies["channel_name"];
+
+                    JObject JObject = JObject.Parse(Body.Result);
+                    var GreetingMessage = (string)JObject["GreetingMessage"];
+                    var DonationLink = (string)JObject["DonationLink"];
+                    var ForbiddenWordLimit = (bool)JObject["ForbiddenWordLimit"];
+                    var ForbiddenWordTimeout = Convert.ToInt32(JObject["forbiddenWordTimeout"]);
+                    StreamerDetail = new StreamerDetail(StreamerId, ChannelName, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
+                    MemberService.UpdateStreamerDetail(StreamerDetail);
+                }
+                return "success";
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.ToString());
+                return "failed";
+            }
+            
         }
 
         /// <summary>
