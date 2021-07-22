@@ -169,8 +169,9 @@ namespace TwitchChatBot.Service
                             var CommandHead = Reader["command_head"].ToString();
                             var CommandBody = Reader["command_body"].ToString();
                             var CommandType = Reader["command_type"].ToString();
+                            var CommandCoolDown = Convert.ToInt32(Reader["command_cooldown"]);
                             Dictionary.Add(
-                                CommandHead, new Command(CommandHead, CommandBody, CommandType)
+                                CommandHead, new Command(CommandHead, CommandBody, CommandType,CommandCoolDown)
                             ); // 읽어온 데이터들을 이용해서 새로운 객체를 list에 담는다.
                         }
                     }
@@ -275,6 +276,10 @@ namespace TwitchChatBot.Service
             return "";
         }
 
+        /// <summary>
+        /// BackGroundUpdateCommandService 에 의해 
+        /// 일정 시간마다 바뀌는 Command 의 값을 바꾼다.
+        /// </summary>
         public void UpdateCommandData()
         {
             string Url = "https://corona-live.com/";
@@ -293,7 +298,7 @@ namespace TwitchChatBot.Service
                     Match match = Regex.Match(PageSource, p);
                     if (match.Success)
                     {
-                        Commands["covid"].CommandBody = "일 확진자수 : " + match.Groups[1].Value.Trim() + "명";
+                        Commands["!covid"].CommandBody = "일 확진자수 : " + match.Groups[1].Value.Trim() + "명";
                     }
                 }
                 finally
