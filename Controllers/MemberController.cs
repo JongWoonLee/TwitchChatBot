@@ -40,7 +40,7 @@ namespace TwitchChatBot.Controllers
             }
             TwitchToken TwitchToken = MemberService.ConnectReleasesWebClient(Code); // code 가 있으면 Token을 가지고 온 뒤
             User User = MemberService.ValidatingRequests(TwitchToken.AccessToken); // Token 을 이용해서 User data를 얻어오고
-            int InsertResult = MemberService.FindStreamer(User.UserId).StreamerIsValid() ? 
+            int InsertResult = MemberService.FindStreamer(User.UserId).StreamerIsValid() ?
             MemberService.InsertStreamer(TwitchToken, User) : 0; // Streamer Table 에 Insert 유효하지 않은 Insert면 0 반환
 
             if (string.IsNullOrWhiteSpace(Request.Cookies["user_id"])) // Cookie 에 User정보가 없으면 저장.
@@ -58,7 +58,7 @@ namespace TwitchChatBot.Controllers
         {
             string UserId = Request.Cookies["user_id"];
             long lUserId = Convert.ToInt64(UserId);
-            ViewData["streamer_detail"] = MemberService.FindStreamerDetail(lUserId);
+            ViewData["StreamerDetail"] = MemberService.FindStreamerDetail(lUserId);
             return View();
         }
 
@@ -85,12 +85,12 @@ namespace TwitchChatBot.Controllers
                 }
                 return "success";
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
                 return "failed";
             }
-            
+
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace TwitchChatBot.Controllers
             if (!string.IsNullOrWhiteSpace(UserId))
             {
                 int Result = MemberService.FindBotInUseByUserId(UserId);
-                ViewData["result"] = Result;
+                ViewData["Result"] = Result;
             }
             return View();
         }
@@ -124,21 +124,21 @@ namespace TwitchChatBot.Controllers
                 JObject JObject = JObject.Parse(Body.Result);
                 BotInUse = (int)JObject["BotInUse"]; // Request에 들어있는 BotInUse
             }
-            string userId = Request.Cookies["user_id"];
-            long lUserId = Convert.ToInt64(userId);
+            string UserId = Request.Cookies["user_id"];
+            long StreamerId = Convert.ToInt64(UserId);
             string ChannelName = Request.Cookies["channel_name"];
             string AccessToken = Request.Cookies["access_token"];
 
             if (BotInUse == 1) // 봇을 사용 한다면
             {
-                Streamer Streamer = MemberService.FindStreamer(lUserId);
-                MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
-                ThreadExecutorService.RegisterBot(lUserId, ChannelName, ChannelName, new TwitchToken(AccessToken, Streamer.RefreshToken));
+                Streamer Streamer = MemberService.FindStreamer(StreamerId);
+                MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse);
+                ThreadExecutorService.RegisterBot(StreamerId, ChannelName, ChannelName, new TwitchToken(AccessToken, Streamer.RefreshToken));
             }
             else // 봇을 사용 안한다면
             {
-                MemberService.UpdateStreamerDetailBotInUse(lUserId, BotInUse);
-                Result = ThreadExecutorService.DisposeBot(lUserId);
+                MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse);
+                Result = ThreadExecutorService.DisposeBot(StreamerId);
             }
             return Result;
         }
@@ -153,6 +153,55 @@ namespace TwitchChatBot.Controllers
                 Response.Cookies.Delete("channel_name");
             }
             return RedirectToAction("Index", "Home");
+        }
+
+        [HttpGet, Route("/member/words")]
+        public IActionResult Words()
+        {
+            string UserId = Request.Cookies["user_id"];
+            long StreamerId = Convert.ToInt64(UserId);
+            var ForbiddenWordList = MemberService.FindForbiddenWordList(StreamerId);
+
+            ViewData["ForbiddenWordList"] = ForbiddenWordList;
+            return View();
+        }
+
+        [HttpPost, Route("/member/words")]
+        public string WordsPost()
+        {
+            int Result = 0;
+            string ForbiddenWord = "";
+            string Status = "";
+            string PrevWord = "";
+            using (var Reader = new StreamReader(Request.Body))
+            {
+                var Body = Reader.ReadToEndAsync();
+                JObject JObject = JObject.Parse(Body.Result);
+                ForbiddenWord = ((string)JObject["ForbiddenWord"]).Trim();
+                Status = (string)JObject["Status"];
+                PrevWord = (string)JObject["PrevWord"];
+            }
+
+            string UserId = Request.Cookies["user_id"];
+            long StreamerId = Convert.ToInt64(UserId);
+            switch (Status)
+            {
+                case "Insert":
+                    Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord);
+                    return "Insert";
+                case "Update":
+                    Result = MemberService.UpdateForbiddenWord(StreamerId, ForbiddenWord ,PrevWord);
+                    return "Update";
+                case "Delete":
+                    Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord);
+                    return "Delete";
+            }
+
+            if (Result == 0)
+            {
+                return null;
+            }
+            return "success";
         }
     }
 

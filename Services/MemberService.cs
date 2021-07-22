@@ -1,6 +1,7 @@
 ﻿using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Net;
 using System.Text;
@@ -179,6 +180,128 @@ namespace TwitchChatBot.Service
                 Console.WriteLine("Insert Fail!!");
             }
             return Result;
+        }
+
+        public List<string> FindForbiddenWordList(long StreamerId)
+        {
+            List<string> Result = new List<string>();
+            string SQL = $"SELECT forbidden_word FROM forbidden_word WHERE streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader())
+                    {
+                        while (Reader.Read())
+                            Result.Add(
+                                Reader["forbidden_word"].ToString()
+                                );
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
+        }
+
+        public int UpdateForbiddenWord(long StreamerId, string ForbiddenWord, string PrevWord)
+        {
+            int Result = 0;
+            string SQL = $"UPDATE forbidden_word SET forbidden_word = @ForbiddenWord streamer_id = {StreamerId} AND forbidden_word = @PrevWord;";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWord", ForbiddenWord);
+                    Cmd.Parameters.AddWithValue("@PrevWord", PrevWord);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
+                    {
+                        Console.WriteLine("Update Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update Fail!!");
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
+        }
+
+        public int DeleteForbiddenWord(long StreamerId, string ForbiddenWord)
+        {
+            int Result = 0;
+            string SQL = $"DELETE FROM forbidden_word WHERE streamer_id = {StreamerId} AND forbidden_word = @ForbiddenWord;";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWord", ForbiddenWord);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
+                    {
+                        Console.WriteLine("Delete Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Delete Fail!!");
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
+        }
+
+        public int InsertForbiddenWord(long StreamerId, string ForbiddenWord)
+        {
+            int Result = 0;
+            string SQL = $"INSERT INTO forbidden_word (streamer_id, forbidden_word) VALUES ({StreamerId},@ForbiddenWord);";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWord", ForbiddenWord);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
+                    {
+                        Console.WriteLine("Insert Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Insert Fail!!");
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
         }
 
         public int UpdateStreamerDetailBotInUse(long StreamerId, int BotInUse)

@@ -1,0 +1,95 @@
+﻿@{
+    ViewData["Title"] = "Words Page";
+    var ForbiddenWordList = (List<string>)ViewData["ForbiddenWordList"];
+}
+<section class="input-row">
+    <label> 금지어 추가하기 </label> 
+    <input type="text" class="overlapped-by-button">
+    <button class="overlap-input btn-insert">+</button>
+
+    <section class="input-row has-multiline-content">
+        <label>
+            금지어 목록
+        </label>
+        <ul class="content list list-single">
+            @if (ForbiddenWordList.Count == 0)
+            {
+                <li class="nothing">
+                    아직 아무것도 없습니다...
+                </li>
+            }
+            else
+            {
+                @foreach (var item in ForbiddenWordList)
+                {
+                    <li class="forbidden-word">
+                        @item
+                        <button class="btn-delete">
+                            삭제
+                        </button>
+                    </li>
+                }
+            }
+
+        </ul>
+    </section>
+</section>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script type="text/javascript">
+    $(document).on("click", "button", function (e) {
+
+        var forbiddenWord = "";
+        var status = "";
+        if (status == "Update") {
+            var prevWord = "";
+        }
+
+        var btnClassList = e.currentTarget.classList;
+        if (btnClassList.contains("btn-insert")) {
+            console.log("insert");
+            status = "Insert";
+            forbiddenWord = e.currentTarget.previousElementSibling.value.trim();
+            if (!forbiddenWord) {
+                return;
+            }
+        } else if (btnClassList.contains("btn-update")) {
+            console.log("update");
+            status = "Update";
+            if (!forbiddenWord) {
+                return;
+            }
+        } else if (btnClassList.contains("btn-delete")) {
+            console.log("delete");
+            status = "Delete";
+            forbiddenWord = e.currentTarget.previousSibling.textContent.trim();
+        }
+        // AJAX 통신 : POST
+        $.ajax({
+            type: "post",
+            url: "/member/words",
+            headers: {
+                "Content-type": "application/json; charset=utf-8"
+            },
+            data: JSON.stringify({
+                ForbiddenWord : forbiddenWord,
+                Status : status,
+                PrevWord : prevWord
+            }),
+            success: function (result) {
+                if (!!result) {
+                    switch (result) {
+                        case "Insert":
+                            break;
+                        case "Update":
+                            break;
+                        case "Delete":
+                            break;
+                    }
+                }
+                else {
+                    alert("fail");
+                }
+            }
+        });
+    });
+</script>

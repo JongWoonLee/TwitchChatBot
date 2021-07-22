@@ -278,11 +278,9 @@ namespace TwitchChatBot.Service
         public void UpdateCommandData()
         {
             string Url = "https://corona-live.com/";
-            //ChromeOptions Options = new ChromeOptions();
-            //Options.AddArgument("headless");
-            //using (IWebDriver driver = new ChromeDriver(Options))
-
-            using (IWebDriver driver = new ChromeDriver())
+            ChromeOptions Options = new ChromeOptions();
+            Options.AddArgument("headless");
+            using (IWebDriver driver = new ChromeDriver(Options))
             {
                 try
                 {
