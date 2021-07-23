@@ -39,28 +39,28 @@
     $(document).on("click", "button", function (e) {
 
         var forbiddenWord = "";
-        var status = "";
-        if (status == "Update") {
+        var todo = "";
+        if (todo == "Update") {
             var prevWord = "";
         }
 
         var btnClassList = e.currentTarget.classList;
         if (btnClassList.contains("btn-insert")) {
             console.log("insert");
-            status = "Insert";
+            todo = "Insert";
             forbiddenWord = e.currentTarget.previousElementSibling.value.trim();
             if (!forbiddenWord) {
                 return;
             }
         } else if (btnClassList.contains("btn-update")) {
             console.log("update");
-            status = "Update";
+            todo = "Update";
             if (!forbiddenWord) {
                 return;
             }
         } else if (btnClassList.contains("btn-delete")) {
             console.log("delete");
-            status = "Delete";
+            todo = "Delete";
             forbiddenWord = e.currentTarget.previousSibling.textContent.trim();
         }
         // AJAX 통신 : POST
@@ -72,7 +72,7 @@
             },
             data: JSON.stringify({
                 ForbiddenWord : forbiddenWord,
-                Status : status,
+                Todo : todo,
                 PrevWord : prevWord
             }),
             success: function (result) {

@@ -12,27 +12,27 @@ namespace TwitchChatBot.Services
         public ThreadExecutorService ThreadExecutorService { get; set; }
 
         /// <summary>
-        /// ThreadExecutorService 의 Command 값을 변경하기 위한 Service
+        /// Background에서 Command 의 값을 갱신해주기 위한 Service
         /// </summary>
-        /// <param name="ThreadExecutorService">ThreadExecutorService에 접근해서 BotToken값을 설정해야 하므로 주입</param>
+        /// <param name="ThreadExecutorService">ThreadExecutorService BotToken값을 설정해야 하므로 주입</param>
         public BackgroundUpdateCommandService(ThreadExecutorService ThreadExecutorService)
         {
             this.ThreadExecutorService = ThreadExecutorService;
         }
 
         /// <summary>
-        /// IHostedService ExecuteAsync
+        /// 주기적으로 실행되는 작업
         /// </summary>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">CancellationToken 작업 완료 여부 flag값</param>
         /// <returns></returns>
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                ThreadExecutorService.UpdateCommandData();
+                ThreadExecutorService.UpdateCommandData(); // Command 데이터를 Update 해준다.
 
-                await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
-            }
-        }
-    }
-}
+                await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken); // 2분마다 반복
+            } // end while
+        } // end ExecuteAsync
+    } // end class
+} // end namespace

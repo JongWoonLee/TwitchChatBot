@@ -11,7 +11,6 @@ namespace TwitchChatBot.Models
     {
         public string UserName;
         public string Channel;
-        public bool InitSuccess;
 
 
         private TcpClient TcpClient;
@@ -19,7 +18,7 @@ namespace TwitchChatBot.Models
         private StreamWriter OutputStream;
 
         /// <summary>
-        /// TcpClient를 이용한 통신 전담 객체
+        /// TcpClient를 이용한 IRC Chat 통신 전담 객체
         /// </summary>
         /// <param name="Ip">IP Address</param>
         /// <param name="Port">연결 포트번호</param>
@@ -34,11 +33,10 @@ namespace TwitchChatBot.Models
                 this.Channel = Channel;
 
                 TcpClient = new TcpClient(Ip, Port);
-                TcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
                 NetworkStream Stream = TcpClient.GetStream();
                 InputStream = new StreamReader(Stream);
                 OutputStream = new StreamWriter(Stream) { NewLine = "\r\n", AutoFlush = true };
-                SendFirstConnectMessage(Password);
+                SendJoinMessage(Password);
             }
             catch (Exception e)
             {
@@ -60,17 +58,21 @@ namespace TwitchChatBot.Models
             catch (Exception e)
             {
                 Console.WriteLine("SendIrcMessage : " + e.Message);
-            }
+            } // end try
         }
 
-        private void SendFirstConnectMessage(string Password)
+        /// <summary>
+        /// 채팅방에 입장하게 해주는 Connect Message
+        /// </summary>
+        /// <param name="Password"></param>
+        private void SendJoinMessage(string Password)
         {
-            SendIrcMessage("PASS " + Password);
+            SendIrcMessage("PASS " + Password); // 
             SendIrcMessage("NICK " + UserName);
             SendIrcMessage("USER " + UserName + " 8 * :" + UserName);
             SendIrcMessage("JOIN #" + Channel);
             SendIrcMessage("CAP REQ :twitch.tv/commands");
-            SendIrcMessage("CAP REQ :twitch.tv/tags");
+            SendIrcMessage("CAP REQ :twitch.tv/tags"); 
         }
 
         public void SendPublicChatMessage(string Message)
@@ -83,7 +85,7 @@ namespace TwitchChatBot.Models
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-            }
+            } // end try
         }
 
         public async Task<string> ReadMessage()
@@ -108,7 +110,7 @@ namespace TwitchChatBot.Models
         {
             try
             {
-                this.TcpClient.GetStream().Close(); // Connected는 항상 true 이므로 제거해보자..
+                this.TcpClient.GetStream().Close();
                 this.TcpClient.Close();
             }
             catch (ObjectDisposedException e)
@@ -118,10 +120,14 @@ namespace TwitchChatBot.Models
             catch (InvalidOperationException e)
             {
                 Console.WriteLine("InvalidOperationException: " + e.ToString());
-            }
+            } // end try
         }
 
-        public bool IsDataAvailable()
+        /// <summary>
+        /// 읽을 Data가 있는지 동기적으로 확인할 수 있는 Method
+        /// </summary>
+        /// <returns></returns>
+        public bool IsDataAvailable() // 기껏 비동기로 짠 이유가 없는데
         {
             NetworkStream Stream = (NetworkStream)InputStream.BaseStream;
             Console.WriteLine("DataAvailable : " + Stream.DataAvailable);
