@@ -26,7 +26,7 @@ namespace TwitchChatBot.Models
         /// <param name="UserName">접속하는 유저명</param>
         /// <param name="Password">User Oauth AccessToken</param>
         /// <param name="Channel">접속할 채널</param>
-        public IrcClient(string Ip, int Port, string UserName, string Channel)
+        public IrcClient(string Ip, int Port, string UserName, string Password ,string Channel)
         {
             try
             {
@@ -34,9 +34,11 @@ namespace TwitchChatBot.Models
                 this.Channel = Channel;
 
                 TcpClient = new TcpClient(Ip, Port);
+                TcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.SendTimeout, 1000);
                 NetworkStream Stream = TcpClient.GetStream();
                 InputStream = new StreamReader(Stream);
                 OutputStream = new StreamWriter(Stream) { NewLine = "\r\n", AutoFlush = true };
+                SendFirstConnectMessage(Password);
             }
             catch (Exception e)
             {
@@ -44,25 +46,10 @@ namespace TwitchChatBot.Models
             }
         }
 
-        public void SendFirstConnectMessage(string UserName, string Password, string Channel)
-        {
-            try
-            {
-                // Channel에 접속해 메세지를 읽어오기 위한 처음 메세지
-                OutputStream.WriteLine("PASS " + Password);
-                OutputStream.WriteLine("NICK " + UserName);
-                OutputStream.WriteLine("USER " + UserName + " 8 * :" + UserName); // 분리한다고 해결되진 않았다.. catch 에서 닫자고 했지만
-                OutputStream.WriteLine("JOIN #" + Channel);
-                OutputStream.WriteLine("CAP REQ :twitch.tv/commands");
-                OutputStream.WriteLine("CAP REQ :twitch.tv/tags");
-                OutputStream.Flush();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("SendFirstConnectMessage : " + e.Message);
-            }
-        }
-
+        /// <summary>
+        /// 챗봇 서버에 Message를 보낸다.
+        /// </summary>
+        /// <param name="Message">전송할 Message</param>
         public void SendIrcMessage(string Message)
         {
             try
@@ -74,6 +61,16 @@ namespace TwitchChatBot.Models
             {
                 Console.WriteLine("SendIrcMessage : " + e.Message);
             }
+        }
+
+        private void SendFirstConnectMessage(string Password)
+        {
+            SendIrcMessage("PASS " + Password);
+            SendIrcMessage("NICK " + UserName);
+            SendIrcMessage("USER " + UserName + " 8 * :" + UserName);
+            SendIrcMessage("JOIN #" + Channel);
+            SendIrcMessage("CAP REQ :twitch.tv/commands");
+            SendIrcMessage("CAP REQ :twitch.tv/tags");
         }
 
         public void SendPublicChatMessage(string Message)
@@ -99,7 +96,6 @@ namespace TwitchChatBot.Models
                 catch (IOException ioe)
                 {
                     CloseTcpClient();
-                    //return "Error receiving Read IOE " + IOE.Message;
                     throw ioe;
                 }
                 catch (Exception e)
@@ -131,12 +127,6 @@ namespace TwitchChatBot.Models
             Console.WriteLine("DataAvailable : " + Stream.DataAvailable);
             return Stream.DataAvailable;
         }
-
-        //Outside of start we need to define ValidateServerCertificate
-        //private bool ValidateServerCertificate(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        //{
-        //    return sslPolicyErrors == SslPolicyErrors.None;
-        //}
     }
 }
 

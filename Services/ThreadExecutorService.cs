@@ -73,7 +73,7 @@ namespace TwitchChatBot.Service
 
         private void Initialize()
         {
-            string SQL = "select s.channel_name, sdt.* from streamer s, streamer_detail sdt where bot_in_use = 1 and s.streamer_id = sdt.streamer_id;";
+            string SQL = "SELECT s.channel_name, sdt.* FROM streamer s, streamer_detail sdt WHERE bot_in_use = 1 AND s.streamer_id = sdt.streamer_id;";
             using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
             {
                 try
@@ -88,10 +88,8 @@ namespace TwitchChatBot.Service
                             var Channel = Reader["channel_name"].ToString();
                             //var RefreshToken = Reader["refresh_token"].ToString();
                             var Password = "oauth:" + BotToken.AccessToken;
-                            var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
-                            IrcClient.SendFirstConnectMessage(Channel, "oauth:" + BotToken.AccessToken, Channel);
+                            var IrcClient = new IrcClient(Ip, Port, Channel, Password, Channel);
                             ManagedBot.Add(StreamerId, new SimpleTwitchBot(
-                                Channel,
                                 StreamerId,
                                 IrcClient,
                                 new PingSender(IrcClient),
@@ -168,7 +166,7 @@ namespace TwitchChatBot.Service
                         {
                             var CommandHead = Reader["command_head"].ToString();
                             var CommandBody = Reader["command_body"].ToString();
-                            var CommandType = Reader["command_type"].ToString();
+                            var CommandType = Convert.ToInt32(Reader["command_type"]);
                             var CommandCoolDown = Convert.ToInt32(Reader["command_cooldown"]);
                             Dictionary.Add(
                                 CommandHead, new Command(CommandHead, CommandBody, CommandType,CommandCoolDown)
@@ -235,12 +233,10 @@ namespace TwitchChatBot.Service
 
         public void RegisterBot(long Id, string UserName, string Channel, TwitchToken TwitchToken)
         {
-            var IrcClient = new IrcClient(Ip, Port, UserName, Channel);
-            IrcClient.SendFirstConnectMessage(UserName, "oauth:" + BotToken.AccessToken, Channel);
+            var IrcClient = new IrcClient(Ip, Port,UserName, "oauth:" + BotToken.AccessToken , Channel);
             try
             {
                 ManagedBot.Add(Id, new SimpleTwitchBot(
-                    Channel,
                     Id,
                     IrcClient,
                     new PingSender(IrcClient),
