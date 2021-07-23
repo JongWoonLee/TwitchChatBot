@@ -3,9 +3,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,22 +27,16 @@ namespace TwitchChatBot.Models
         private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
         private string ForbiddenWordList;
         private long StreamerId;
-        private string Channel;
+        private StreamerDetail StreamerDetail;
 
+        enum CommandType
+        {
+            Default = 0,
+            Personal = 1,
+            Twitch = 2
+        }
 
-        //public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
-        //{
-        //    this.StreamerId = StreamerId;
-        //    this.IrcClient = IrcClient;
-        //    this.PingSender = PingSender;
-        //    this.Commands = Commands;
-        //    this.ConnectionString = ConnectionString;
-        //    this.ThreadDoWorkRun = true;
-        //    this.StreamerToken = StreamerToken;
-        //    this.ForbiddenWordList = FindForbiddenWords();
-        //    Thread = new Thread(new ThreadStart(this.Run));
-        //    Start();
-        //}
+       
 
         /// <summary>
         /// 주입받은 값을 이용해 초기 세팅을 한다.
@@ -49,9 +45,8 @@ namespace TwitchChatBot.Models
         /// <param name="PingSender">IrcClient에 주기적으로 핑을 보내는 PingSender</param>
         /// <param name="Commands">봇 기본 명령어</param>
         /// <param name="ConnectionString">Connection생성을 위한 ConnectionString</param>
-        public SimpleTwitchBot(string Channel, long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
+        public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
         {
-            this.Channel = Channel;
             this.StreamerId = StreamerId;
             this.IrcClient = IrcClient;
             this.PingSender = PingSender;
@@ -60,6 +55,7 @@ namespace TwitchChatBot.Models
             this.ThreadDoWorkRun = true;
             this.StreamerToken = StreamerToken;
             this.ForbiddenWordList = FindForbiddenWords();
+            this.StreamerDetail = FindStreamerDetail(StreamerId);
             Thread = new Thread(new ThreadStart(this.Run));
             Start();
         }
@@ -92,37 +88,32 @@ namespace TwitchChatBot.Models
                         //    // 메세지 예시:
                         //    // ":[user]![user]@[user].tmi.twitch.tv PRIVMSG #[channel] :[message]"
                         //string pattern = $@":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:!(\w+)";
-                        string pattern = $@"name=(.*)(;em.*);id=(.*)(;mod.*)=\s:(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:(!?.*)";
+                        string pattern = $@"name=(.*)(;em.*);id=(.*)(;mod.*);user-(.*)\s:(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:(!?.*)";
                         //string pattern = $@":(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:(!?\w+)";
                         Match match = Regex.Match(Message.Trim(), pattern);
                         var v = match.Success;
                         //if (match.Success && match.Groups[4].Value.Trim().Equals("PRIVMSG"))
-                        if (match.Success && match.Groups[8].Value.Trim().Equals("PRIVMSG"))
+                        if (match.Success && match.Groups[9].Value.Trim().Equals("PRIVMSG"))
                         {
 
-                            if (IsContainsForbiddenWord(match.Groups[9].Value.Trim()))
+                            if (IsContainsForbiddenWord(match.Groups[10].Value.Trim()))
                             {
-                                Console.WriteLine(match.Groups[9].Value.Trim());
-
-                                IrcClient.SendPublicChatMessage($"/delete {match.Groups[3].Value.Trim()}"); // 명령어 수정 요망 /msg 삭제랑
-                                //IrcClient.SendPublicChatMessage($"지워졌나요"); // 명령어 수정 요망 /msg 삭제랑
-                                //IrcClient.SendIrcMessage("@login=whddns262;target-msg-id=e8ecb3dd-8b84-460e-aacf-2d2d23cb9fa7 :tmi.twitch.tv CLEARMSG #whddns262 :!retry");
-                                //IrcClient.SendPublicChatMessage($"/timeout {match.Groups[1].Value.Trim()} 10"); // 명령어 수정 요망 /msg 삭제랑
-                                // @login=<User>;target-msg-id=<target-msg-id> :tmi.twitch.tv CLEARMSG #<channel> :<message>
+                                IrcClient.SendPublicChatMessage($"/delete {match.Groups[3].Value.Trim()}"); // 명령어 수정 요망 
+                                IrcClient.SendPublicChatMessage($"/timeout {match.Groups[6].Value.Trim()} {StreamerDetail.ForbiddenWordTimeout}");
                             }
-                            //if(Message.Contains("!raid"))
+                            //if (Message.Contains("!raid"))
                             //{
-                            //    string Ip = "irc.chat.twitch.tv";
-                            //    int Port = 6667;
-                            //    var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
-                            //    IrcClient.SendFirstConnectMessage(Channel, "oauth:"+StreamerToken.AccessToken, Channel);
-                            //    IrcClient.SendPublicChatMessage("화자는 누구인가");
-                            //    IrcClient.SendPublicChatMessage("/raid mbnv262");
+                                //string Ip = "irc.chat.twitch.tv";
+                                //int Port = 6667;
+                                //var IrcClient = new IrcClient(Ip, Port, Channel, Channel);
+
+                                //IrcClient.SendPublicChatMessage("host mbnv262");
+                                //IrcClient.SendPublicChatMessage("/host mbnv262");
+
+                               
+
                             //}
-                            //match.Groups[1].Value.Trim(); // User
-                            //match.Groups[4].Value.Trim().Equals("PRIVMSG"); // Message Type
-                            //match.Groups[5].Value.Trim(); // Command Target IndexParseSign 뒤로 짜르면 저게 target인지 확인해야할듯(x 구현 할지 안할지 모름);
-                            var RawCommand = match.Groups[5].Value.Trim();
+                            var RawCommand = match.Groups[10].Value.Trim();
                             int IntIndexParseSign = RawCommand.IndexOf(' ');
                             string CommandHead = IntIndexParseSign == -1 ? RawCommand : RawCommand.Substring(0, IntIndexParseSign); // Command
                                                                                                                                     //이걸 Pattern 화 해서 그게 맞는지를 읽어오는게 
@@ -137,13 +128,13 @@ namespace TwitchChatBot.Models
                                         SetTimeout(Cmd.Value);
                                         switch (Cmd.Value.CommandType)
                                         {
-                                            case "T":
-                                                IrcClient.SendPublicChatMessage(TwitchCommandOutput(CommandHead, Cmd.Value.CommandBody));
+                                            case (int)CommandType.Twitch:
+                                                IrcClient.SendPublicChatMessage(TwitchCommandOutput(Cmd.Value));
                                                 break;
-                                            case "?":
-                                                //IrcClient.SendPublicChatMessage(QuestionComandOutput());
+                                            case (int)CommandType.Personal:
+                                                IrcClient.SendPublicChatMessage(PersonalCommandOutput(Cmd.Value));
                                                 break;
-                                            default:
+                                            case (int)CommandType.Default:
                                                 IrcClient.SendPublicChatMessage(Cmd.Value.CommandBody);
                                                 break;
                                         }
@@ -170,6 +161,22 @@ namespace TwitchChatBot.Models
             }
         }
 
+        private string PersonalCommandOutput(Command Command)
+        {
+            string Result = "";
+            switch (Command.CommandHead)
+            {
+                case "!하이":
+                    Result = StreamerDetail.GreetingMessage;
+                    break;
+                case "!도네":
+                    Result = StreamerDetail.DonationLink;
+                    break;
+            }
+
+            return Result;
+        }
+
         private void SetTimeout(Command Command)
         {
             Command.Block = true;
@@ -180,12 +187,12 @@ namespace TwitchChatBot.Models
             });
         }
 
-        private string TwitchCommandOutput(string CommandHead, string CommandBody)
+        private string TwitchCommandOutput(Command Command)
         {
             string Result = "";
-            switch (CommandHead)
+            switch (Command.CommandHead)
             {
-                case "투하":
+                case "!투하":
                     Result = IsLive().ToString();
                     break;
                 default:
@@ -193,6 +200,44 @@ namespace TwitchChatBot.Models
             }
 
             return Result;
+        }
+
+        public StreamerDetail FindStreamerDetail(long StreamerId)
+        {
+            StreamerDetail StreamerDetail = null;
+            string SQL = $"SELECT std.*, s.channel_name FROM streamer_detail std, streamer s WHERE std.streamer_id = s.streamer_id AND s.streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    using (var Reader = Cmd.ExecuteReader())
+                    {
+                        while (Reader.Read())
+                        {
+                            StreamerDetail = new StreamerDetail(
+                                Convert.ToInt64(Reader["streamer_id"]),
+                                Reader["channel_name"].ToString(),
+                                Convert.ToInt32(Reader["bot_in_use"]),
+                                Reader["donation_link"].ToString(),
+                                Reader["greeting_message"].ToString(),
+                                Convert.ToInt32(Reader["forbidden_word_timeout"]),
+                                Convert.ToInt32(Reader["forbidden_word_limit"])
+                                );
+                        }
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+            }
+
+
+            return StreamerDetail;
         }
 
         /// <summary>
@@ -266,14 +311,14 @@ namespace TwitchChatBot.Models
         {
             try
             {
-                string Url = "https://api.twitch.tv/helix/search/channels?query=" + Channel;
+                string Url = "https://api.twitch.tv/helix/search/channels?query=" + StreamerDetail.ChannelName;
                 var Client = new WebClient();
                 Client.Headers.Add("Authorization", $"Bearer {StreamerToken.AccessToken}");
                 Client.Headers.Add("client-id", ClientId);
                 var Response = Client.DownloadString(Url);
                 JObject JSONResponse = JObject.Parse(Response);
                 var BroadcasterList = JSONResponse["data"].Select(r => JsonConvert.DeserializeObject<Broadcaster>(r.ToString())).ToList();
-                var Broadcaster = BroadcasterList.Find(b => b.BroadcasterLogin.Equals(Channel));
+                var Broadcaster = BroadcasterList.Find(b => b.BroadcasterLogin.Equals(StreamerDetail.ChannelName));
                 //BroadcasterList BroadcasterList = JsonConvert.DeserializeObject<BroadcasterList>(Response);
                 //Broadcaster b = Array.Find(BroadcasterList.Data, b => b.BroadcasterLogin.Equals(Channel));
 
@@ -311,13 +356,5 @@ namespace TwitchChatBot.Models
             [JsonProperty(PropertyName = "started_at")]
             private string StartedAt { get; set; }
         }
-
-        //private class BroadcasterList
-        //{
-        //    [JsonProperty(PropertyName = "data")]
-        //    public Broadcaster[] Data { get; set; }
-        //    [JsonProperty(PropertyName = "pagination")]
-        //    private string Pagination;
-        //}
     }
 }

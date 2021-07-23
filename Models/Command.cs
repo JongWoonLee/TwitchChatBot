@@ -4,11 +4,11 @@
     {
         public string CommandHead { get; set; }
         public string CommandBody { get; set; }
-        public string CommandType { get; set; }
+        public int CommandType { get; set; }
         public bool Block { get; set; }
         public int CommandCoolDown {get;set;}
 
-        public Command(string CommandHead, string CommandBody, string CommandType, int CommandCoolDown)
+        public Command(string CommandHead, string CommandBody, int CommandType, int CommandCoolDown)
         {
             this.CommandHead = CommandHead;
             this.CommandBody = CommandBody;
