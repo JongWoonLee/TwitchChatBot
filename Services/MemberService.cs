@@ -10,27 +10,16 @@ using TwitchChatBot.Services;
 
 namespace TwitchChatBot.Service
 {
-    public class MemberService
+    public class MemberService : DBServiceBase
     {
-        private string DefaultIP { get; set; }
-        private string ConnectionString { get; set; }
+        public string DefaultIP { get; set; }
 
-        private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
-        private string ClientSecret { get; set; }
-
-
-        public MemberService(string ConnectionString, string DefaultIP, string ClientSecret)
+        public MemberService(string ConnectionString, string DefaultIP, string ClientSecret) : base(ConnectionString, ClientSecret)
         {
-            this.ConnectionString = ConnectionString;
+            this.ConnectionString = base.ConnectionString;
+            this.ClientSecret = base.ClientSecret;
             this.DefaultIP = DefaultIP;
-            this.ClientSecret = ClientSecret;
         }
-
-        public MySqlConnection GetConnection()
-        {
-            return new MySqlConnection(ConnectionString);
-        }
-
 
         /// <summary>
         /// RefreshToken 값을 이용해 처음 BotToken 값을 Validate

@@ -11,20 +11,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using TwitchChatBot.Services;
 
 namespace TwitchChatBot.Models
 {
-    public class SimpleTwitchBot
+    public class SimpleTwitchBot : DBServiceBase
     {
         private Thread Thread;
         public IrcClient IrcClient { get; set; }
         public PingSender PingSender;
         public Dictionary<string, Command> Commands;
-        private string ConnectionString;
         private bool ThreadDoWorkRun;
         public TwitchToken StreamerToken;
 
-        private const string ClientId = "jjvh028bmtssj5x8fov8lu3snk3wut";
         private string ForbiddenWordList;
         private long StreamerId;
         private StreamerDetail StreamerDetail;
@@ -48,13 +47,13 @@ namespace TwitchChatBot.Models
         /// <param name="Commands">Dictionary<string,Command> 봇 기본 명령어</param>
         /// <param name="ConnectionString">string DB ConnectionString</param>
         /// <param name="StreamerToken">TwitchToken 채널 중재자가 아니라 채널 소유자 권한의 명령어가 필요할때 쓰는 StreamerToken</param>
-        public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken)
+        public SimpleTwitchBot(long StreamerId, IrcClient IrcClient, PingSender PingSender, Dictionary<string, Command> Commands, string ConnectionString, TwitchToken StreamerToken) : base(ConnectionString)
         {
             this.StreamerId = StreamerId;
             this.IrcClient = IrcClient;
             this.PingSender = PingSender;
             this.Commands = Commands;
-            this.ConnectionString = ConnectionString;
+            this.ConnectionString = base.ConnectionString;
             this.ThreadDoWorkRun = true; // Thread flag 값 true로 설정
             this.StreamerToken = StreamerToken;
             this.ForbiddenWordList = FindForbiddenWords(); // 금지어 리스트 읽어오기
@@ -93,8 +92,7 @@ namespace TwitchChatBot.Models
 
                         if (IsContainsForbiddenWord(match.Groups[10].Value.Trim()))
                         {
-                            IrcClient.SendPublicChatMessage($"/delete {match.Groups[3].Value.Trim()}"); // 명령어 수정 요망 
-                            IrcClient.SendPublicChatMessage($"/timeout {match.Groups[6].Value.Trim()} {StreamerDetail.ForbiddenWordTimeout}");
+                            IrcClient.SendPublicChatMessage($"/delete {match.Groups[3].Value.Trim()}"); // target-msg 만 삭제
                         } // end if
 
                         var RawCommand = match.Groups[10].Value.Trim();
@@ -253,15 +251,6 @@ namespace TwitchChatBot.Models
                 ThreadDoWorkRun = false; // 메서드 Run() loop 탈출을 위한 flag 값 설정
                 this.Thread.Join();
             }
-        }
-
-        /// <summary>
-        /// ConnectionString을 이용해 Connection객체를 얻어온다.
-        /// </summary>
-        /// <returns>DBConnection</returns>
-        private MySqlConnection GetConnection()
-        {
-            return new MySqlConnection(ConnectionString);
         }
 
         /// <summary>

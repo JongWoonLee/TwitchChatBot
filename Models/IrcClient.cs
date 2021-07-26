@@ -133,6 +133,17 @@ namespace TwitchChatBot.Models
             Console.WriteLine("DataAvailable : " + Stream.DataAvailable);
             return Stream.DataAvailable;
         }
+
+        class CallbackArg { }
+        class PrimeCallbackArg : CallbackArg
+        {
+            public int Prime;
+
+                public PrimeCallbackArg(int prime)
+            {
+                this.Prime = prime;
+            }
+        }
     }
 }
 
