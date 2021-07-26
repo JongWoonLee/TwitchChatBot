@@ -202,31 +202,41 @@ namespace TwitchChatBot.Controllers
             string PrevWord = "";
 
             // Request Parameter 수집
-            using (var Reader = new StreamReader(Request.Body))
+            try
             {
-                var Body = Reader.ReadToEndAsync();
-                JObject JObject = JObject.Parse(Body.Result);
-                ForbiddenWord = ((string)JObject["ForbiddenWord"]).Trim(); // 금지어
-                Todo = (string)JObject["Todo"]; // 작업의 이름
-                PrevWord = (string)JObject["PrevWord"]; // 이전 입력 내용(Update 시에만 필요)
-            } // end using
+                using (var Reader = new StreamReader(Request.Body))
+                {
+                    var Body = Reader.ReadToEndAsync();
+                    JObject JObject = JObject.Parse(Body.Result);
+                    ForbiddenWord = ((string)JObject["ForbiddenWord"]).Trim(); // 금지어
+                    Todo = (string)JObject["Todo"]; // 작업의 이름
+                    PrevWord = (string)JObject["PrevWord"]; // 이전 입력 내용(Update 시에만 필요)
+                } // end using
 
-            string UserId = Request.Cookies["UserId"];
-            long StreamerId = Convert.ToInt64(UserId);
+                string UserId = Request.Cookies["UserId"];
+                long StreamerId = Convert.ToInt64(UserId);
 
-            // Todo 값에 의해 3가지 작업 분리
-            switch (Todo)
+                // Todo 값에 의해 3가지 작업 분리
+                switch (Todo)
+                {
+                    case "Insert":
+                        Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord);
+                        ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
+                        return "Insert";
+                    case "Update":
+                        Result = MemberService.UpdateForbiddenWord(StreamerId, ForbiddenWord, PrevWord);
+                        ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
+                        return "Update";
+                    case "Delete":
+                        Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord);
+                        ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
+                        return "Delete";
+                } // end switch
+            }
+            catch(Exception e)
             {
-                case "Insert":
-                    Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord);
-                    return "Insert";
-                case "Update":
-                    Result = MemberService.UpdateForbiddenWord(StreamerId, ForbiddenWord, PrevWord);
-                    return "Update";
-                case "Delete":
-                    Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord);
-                    return "Delete";
-            } // end switch
+                Console.WriteLine(e.ToString());
+            }
 
             if (Result == 0)
             {

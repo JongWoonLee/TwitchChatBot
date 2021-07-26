@@ -315,6 +315,10 @@ namespace TwitchChatBot.Models
             Match Match = Regex.Match(Message.Trim(), Pattern, RegexOptions.IgnoreCase);
             return Match.Success;
         }
+        public void RenewForbiddenWordList()
+        {
+            this.ForbiddenWordList = FindForbiddenWords();
+        }
 
         /// <summary>
         /// Twitch Api에 현재 채널이 방송중인지 여부를 확인해준다.
