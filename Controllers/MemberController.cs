@@ -89,14 +89,13 @@ namespace TwitchChatBot.Controllers
                     var Body = Reader.ReadToEndAsync();
                     string userId = Request.Cookies["UserId"];
                     long StreamerId = Convert.ToInt64(userId);
-                    string ChannelName = Request.Cookies["channel_name"];
 
                     JObject JObject = JObject.Parse(Body.Result);
                     var GreetingMessage = (string)JObject["GreetingMessage"];
                     var DonationLink = (string)JObject["DonationLink"];
                     var ForbiddenWordLimit = (bool)JObject["ForbiddenWordLimit"];
                     var ForbiddenWordTimeout = Convert.ToInt32(JObject["forbiddenWordTimeout"]);
-                    StreamerDetail StreamerDetail = new StreamerDetail(StreamerId, ChannelName, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
+                    StreamerDetail StreamerDetail = new StreamerDetail(StreamerId, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
                     MemberService.UpdateStreamerDetail(StreamerDetail); // StreamerDetail 정보를 Update
                 } // end using
                 return "success";
@@ -135,30 +134,38 @@ namespace TwitchChatBot.Controllers
         {
             int BotInUse = 0;
             string Result = null;
-            using (var Reader = new StreamReader(Request.Body))
+            try
             {
-                var Body = Reader.ReadToEndAsync();
-                JObject JObject = JObject.Parse(Body.Result);
-                BotInUse = (int)JObject["BotInUse"]; // Request에 들어있는 BotInUse
-            } // end using
-            string UserId = Request.Cookies["UserId"];
-            long StreamerId = Convert.ToInt64(UserId);
-            string ChannelName = Request.Cookies["ChannelName"];
-            string AccessToken = Request.Cookies["AccessToken"];
+                using (var Reader = new StreamReader(Request.Body))
+                {
+                    var Body = Reader.ReadToEndAsync();
+                    JObject JObject = JObject.Parse(Body.Result);
+                    BotInUse = (int)JObject["BotInUse"]; // Request에 들어있는 BotInUse
+                } // end using
+                string UserId = Request.Cookies["UserId"];
+                long StreamerId = Convert.ToInt64(UserId);
+                string ChannelName = Request.Cookies["ChannelName"];
+                string AccessToken = Request.Cookies["AccessToken"];
 
-            // 봇을 사용 한다면
-            if (BotInUse == 1)
-            {
-                Streamer Streamer = MemberService.FindStreamer(StreamerId); // 스트리머 정보를 찾아서 
-                MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse);  // 봇 사용 여부를 Update
-                ThreadExecutorService.RegisterBot(StreamerId, ChannelName, ChannelName, new TwitchToken(AccessToken, Streamer.RefreshToken)); // 봇을 실행
+                // 봇을 사용 한다면
+                if (BotInUse == 1)
+                {
+                    Streamer Streamer = MemberService.FindStreamer(StreamerId); // 스트리머 정보를 찾아서 
+                    MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse);  // 봇 사용 여부를 Update
+                    ThreadExecutorService.RegisterBot(StreamerId, ChannelName, ChannelName, new TwitchToken(AccessToken, Streamer.RefreshToken)); // 봇을 실행
+                }
+                // 봇을 사용 안한다면
+                else
+                {
+                    MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse); // 봇 사용 여부를 Update
+                    Result = ThreadExecutorService.DisposeBot(StreamerId); // 봇을 폐기
+                } // end if
             }
-            // 봇을 사용 안한다면
-            else
+            catch(Exception e)
             {
-                MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse); // 봇 사용 여부를 Update
-                Result = ThreadExecutorService.DisposeBot(StreamerId); // 봇을 폐기
-            } // end if
+                Console.WriteLine(e.ToString());
+            }
+            
             return Result;
         } // end StartBotPost
 
@@ -217,32 +224,30 @@ namespace TwitchChatBot.Controllers
                 long StreamerId = Convert.ToInt64(UserId);
 
                 // Todo 값에 의해 3가지 작업 분리
-                switch (Todo)
+                if(!string.IsNullOrWhiteSpace(ForbiddenWord))
                 {
-                    case "Insert":
-                        Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord);
-                        ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
-                        return "Insert";
-                    case "Update":
-                        Result = MemberService.UpdateForbiddenWord(StreamerId, ForbiddenWord, PrevWord);
-                        ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
-                        return "Update";
-                    case "Delete":
-                        Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord);
-                        ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
-                        return "Delete";
-                } // end switch
+                    switch (Todo)
+                    {
+                        case "Insert":
+                            Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord);
+                            ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
+                            return "Insert";
+                        case "Update":
+                            Result = MemberService.UpdateForbiddenWord(StreamerId, ForbiddenWord, PrevWord);
+                            ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
+                            return "Update";
+                        case "Delete":
+                            Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord);
+                            ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();
+                            return "Delete";
+                    } // end switch
+                }
             }
             catch(Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
-
-            if (Result == 0)
-            {
-                return null;
-            } // end if
-            return "success";
+            return null;
         } // end WordsPost
     } // end class
 } // end namespace

@@ -23,10 +23,9 @@ namespace TwitchChatBot.Models
             this.ForbiddenWordTimeout = ForbiddenWordTimeout;
         }
 
-        public StreamerDetail(long StreamerId, string ChannelName, string DonationLink, string GreetingMessage, int ForbiddenWordLimit, int ForbiddenWordTimeout)
+        public StreamerDetail(long StreamerId, string DonationLink, string GreetingMessage, int ForbiddenWordLimit, int ForbiddenWordTimeout)
         {
             this.StreamerId = StreamerId;
-            this.ChannelName = ChannelName;
             this.DonationLink = DonationLink;
             this.GreetingMessage = GreetingMessage;
             this.ForbiddenWordLimit = ForbiddenWordLimit == 1 ? true : false;
@@ -41,9 +40,6 @@ namespace TwitchChatBot.Models
         public string GreetingMessage { get; set; }
         public bool ForbiddenWordLimit { get; set; }
         public int ForbiddenWordTimeout { get; set; }
-        //public int LongTextLimit { get; set; }
-        //public int LongTextLimitTimeout { get; set; }
-        //public int LongTextLimitLength { get; set; }
 
     }
 }
