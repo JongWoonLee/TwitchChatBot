@@ -89,11 +89,20 @@ namespace TwitchChatBot.Models
                     Match match = Regex.Match(Message.Trim(), pattern);
                     if (match.Success && match.Groups[9].Value.Trim().Equals("PRIVMSG"))
                     {
-
-                        if (IsContainsForbiddenWord(match.Groups[10].Value.Trim()))
+                        if (StreamerDetail.ForbiddenWordLimit)
                         {
-                            IrcClient.SendPublicChatMessage($"/delete {match.Groups[3].Value.Trim()}"); // target-msg 만 삭제
-                        } // end if
+                            if (IsContainsForbiddenWord(match.Groups[10].Value.Trim()))
+                            {
+                                if (StreamerDetail.ForbiddenWordTimeout > 0)
+                                {
+                                    IrcClient.SendPublicChatMessage($"/timeout {match.Groups[6].Value.Trim()}");
+                                }
+                                else
+                                {
+                                    IrcClient.SendPublicChatMessage($"/delete {match.Groups[3].Value.Trim()}"); // target-msg 만 삭제
+                                }
+                            } // end if
+                        }
 
                         var RawCommand = match.Groups[10].Value.Trim();
                         int IntIndexParseSign = RawCommand.IndexOf(' ');
@@ -124,9 +133,7 @@ namespace TwitchChatBot.Models
                                 } // end if(!Cmd.Value)
                             } // end if(CommandHead)
                         } // end foreach
-
                     } // end if (match.Success)
-
                 }
                 catch (InvalidOperationException e)
                 {
@@ -223,12 +230,12 @@ namespace TwitchChatBot.Models
                                 Convert.ToInt32(Reader["bot_in_use"]),
                                 Reader["donation_link"].ToString(),
                                 Reader["greeting_message"].ToString(),
-                                Convert.ToInt32(Reader["forbidden_word_timeout"]),
-                                Convert.ToInt32(Reader["forbidden_word_limit"])
+                                Convert.ToInt32(Reader["forbidden_word_limit"]),
+                                Convert.ToInt32(Reader["forbidden_word_timeout"])
                                 );
                         } // end while
                     } // end using
-                } 
+                }
                 catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
@@ -261,13 +268,13 @@ namespace TwitchChatBot.Models
         {
             string ForbiddenWordList = "";
             string SQL = $"SELECT fw.forbidden_word FROM forbidden_word fw JOIN streamer s ON s.streamer_id  = fw.streamer_id and s.streamer_id = {StreamerId};";
-            using (MySqlConnection Conn = GetConnection()) 
+            using (MySqlConnection Conn = GetConnection())
             {
                 try
                 {
                     Conn.Open();
                     MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
-                    using (var Reader = Cmd.ExecuteReader()) 
+                    using (var Reader = Cmd.ExecuteReader())
                     {
                         while (Reader.Read())
                         {
