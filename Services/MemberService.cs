@@ -202,7 +202,7 @@ namespace TwitchChatBot.Service
         public int UpdateForbiddenWord(long StreamerId, string ForbiddenWord, string PrevWord)
         {
             int Result = 0;
-            string SQL = $"UPDATE forbidden_word SET forbidden_word = @ForbiddenWord streamer_id = {StreamerId} AND forbidden_word = @PrevWord;";
+            string SQL = $"UPDATE forbidden_word SET forbidden_word = @ForbiddenWord WHERE streamer_id = {StreamerId} AND forbidden_word = @PrevWord;";
             using (MySqlConnection Conn = GetConnection())
             {
                 try
@@ -369,8 +369,8 @@ namespace TwitchChatBot.Service
                                 Convert.ToInt32(Reader["bot_in_use"]),
                                 Reader["donation_link"].ToString(),
                                 Reader["greeting_message"].ToString(),
-                                Convert.ToInt32(Reader["forbidden_word_timeout"]),
-                                Convert.ToInt32(Reader["forbidden_word_limit"])
+                                Convert.ToInt32(Reader["forbidden_word_limit"]),
+                                Convert.ToInt32(Reader["forbidden_word_timeout"])
                                 );
                         }
                     }
