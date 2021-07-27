@@ -14,6 +14,12 @@ namespace TwitchChatBot.Service
     {
         public string DefaultIP { get; set; }
 
+        /// <summary>
+        /// 생성자
+        /// </summary>
+        /// <param name="ConnectionString">string DBConnectionString</param>
+        /// <param name="DefaultIP">string Redirect Address</param>
+        /// <param name="ClientSecret">string App ClientSecret</param>
         public MemberService(string ConnectionString, string DefaultIP, string ClientSecret) : base(ConnectionString, ClientSecret)
         {
             this.ConnectionString = base.ConnectionString;
@@ -24,8 +30,8 @@ namespace TwitchChatBot.Service
         /// <summary>
         /// StreamerId 값을 이용해 Streamer를 찾는다.
         /// </summary>
-        /// <param name="StreamerId"></param>
-        /// <returns></returns>
+        /// <param name="StreamerId">스트리머 ID</param>
+        /// <returns>Streamer ID로 검색된 스트리머</returns>
         public Streamer FindStreamer(long StreamerId)
         {
             Streamer Streamer = new Streamer();
@@ -56,9 +62,15 @@ namespace TwitchChatBot.Service
             }
         }
 
-
+        /// <summary>
+        /// Authentication Token 을 얻어온다.
+        /// </summary>
+        /// <param name="Code">인가코드</param>
+        /// <returns>TwitchToken 유저 토큰</returns>
         public TwitchToken GettingTokens(string Code)
         {
+            TwitchToken TwitchToken = null;
+
             string Url = "https://id.twitch.tv/oauth2/token";
             var Client = new WebClient();
             var Data = new NameValueCollection();
@@ -68,40 +80,67 @@ namespace TwitchChatBot.Service
             Data["client_secret"] = ClientSecret;
             Data["redirect_uri"] = $"https://{DefaultIP}/member/index"; ;
             Data["code"] = Code;
-
-            var Response = Client.UploadValues(Url, "POST", Data);
-            string Str = Encoding.Default.GetString(Response);
-            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+            try
+            {
+                var Response = Client.UploadValues(Url, "POST", Data);
+                string Str = Encoding.Default.GetString(Response);
+                TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
             return TwitchToken;
         }
 
 
-
+        /// <summary>
+        /// UserAccessToken을 이용해 Id 값을 읽어온다.
+        /// </summary>
+        /// <param name="AccessToken">유저 AccessToken</param>
+        /// <returns>User 유저 정보</returns>
         public User ValidatingRequests(string AccessToken)
         {
+            User User = null;
             string Url = "https://id.twitch.tv/oauth2/validate";
             var Client = new WebClient();
-            Client.Headers.Add("Authorization", $"Bearer {AccessToken}");
-            var Response = Client.DownloadString(Url);
-            User User = JsonConvert.DeserializeObject<User>(Response);
+            try
+            {
 
+                Client.Headers.Add("Authorization", $"Bearer {AccessToken}");
+                var Response = Client.DownloadString(Url);
+                User = JsonConvert.DeserializeObject<User>(Response);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
             // client_id : string
             // login : string
             // scope : string[] 
-            // user_id : long(오는건 string인거 같은데)
+            // user_id : long
             // expires_in : int
             return User;
         }
 
+        /// <summary>
+        /// 인가코드를 위한 주소를 얻어오는 메소드
+        /// </summary>
+        /// <returns>string Redirect URL</returns>
         public string GetRedirectURL()
         {
             string Url = "https://id.twitch.tv/oauth2/authorize";
             string RedirectUri = $"https://{DefaultIP}/member/index";
             string ResponseType = "code";
             return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
-            //return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email channel:moderate channel_editor"; // User Dont need but Raid need channel_editor
         }
 
+        /// <summary>
+        /// StreamerInsert
+        /// </summary>
+        /// <param name="TwitchToken">Authentication Token</param>
+        /// <param name="User">User 유저 데이터</param>
+        /// <returns>int 쿼리 실행 결과 row 수</returns>
         public int InsertStreamer(TwitchToken TwitchToken, User User)
         {
             var Result = 0;
@@ -132,13 +171,19 @@ namespace TwitchChatBot.Service
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
                     Console.WriteLine(e.ToString());
-                    Transaction.Rollback();
+                    Transaction.Rollback(); // 트렌젝션 롤백
                 }
                 Conn.Close();
                 return Result;
             }
         }
 
+        /// <summary>
+        /// StreamerDetail Insert
+        /// </summary>
+        /// <param name="MySqlCommand">MySqlCommand SqlCommand</param>
+        /// <param name="InheritedKey">long LastInsertKey</param>
+        /// <returns></returns>
         private int InsertStreamerDetail(MySqlCommand MySqlCommand, long InheritedKey)
         {
             var Result = 0;
@@ -166,6 +211,11 @@ namespace TwitchChatBot.Service
             return Result;
         }
 
+        /// <summary>
+        /// 금지어 목록을 읽어온다.
+        /// </summary>
+        /// <param name="StreamerId">long 스트리머 ID</param>
+        /// <returns>List<string> 금지어 목록</returns>
         public List<string> FindForbiddenWordList(long StreamerId)
         {
             List<string> Result = new List<string>();
@@ -194,6 +244,13 @@ namespace TwitchChatBot.Service
             }
         }
 
+        /// <summary>
+        /// 금지어 목록 업데이트
+        /// </summary>
+        /// <param name="StreamerId">스트리머 ID</param>
+        /// <param name="ForbiddenWord">금지어</param>
+        /// <param name="PrevWord">이전 금지어</param>
+        /// <returns>int 쿼리 실행 결과 row 수</returns>
         public int UpdateForbiddenWord(long StreamerId, string ForbiddenWord, string PrevWord)
         {
             int Result = 0;
@@ -223,9 +280,15 @@ namespace TwitchChatBot.Service
                 }
                 Conn.Close();
                 return Result;
-            }
+            } 
         }
 
+        /// <summary>
+        /// 금지어 삭제
+        /// </summary>
+        /// <param name="StreamerId">스트리머 ID</param>
+        /// <param name="ForbiddenWord">금지어</param>
+        /// <returns>int 쿼리 실행 결과 row 수</returns>
         public int DeleteForbiddenWord(long StreamerId, string ForbiddenWord)
         {
             int Result = 0;
@@ -257,6 +320,12 @@ namespace TwitchChatBot.Service
             }
         }
 
+        /// <summary>
+        /// 금지어 추가
+        /// </summary>
+        /// <param name="StreamerId">스트리머 ID</param>
+        /// <param name="ForbiddenWord">금지어</param>
+        /// <returns>int 쿼리 실행 row 수</returns>
         public int InsertForbiddenWord(long StreamerId, string ForbiddenWord)
         {
             int Result = 0;
@@ -288,6 +357,12 @@ namespace TwitchChatBot.Service
             }
         }
 
+        /// <summary>
+        /// StreamerDetail의 봇 사용 여부를 업데이트
+        /// </summary>
+        /// <param name="StreamerId">스트리머 ID</param>
+        /// <param name="BotInUse">봇 사용 여부</param>
+        /// <returns>int 쿼리 실행 row 수</returns>
         public int UpdateStreamerDetailBotInUse(long StreamerId, int BotInUse)
         {
             var Result = 0;
@@ -317,10 +392,13 @@ namespace TwitchChatBot.Service
                 Conn.Close();
                 return Result;
             }
-
         }
 
-
+        /// <summary>
+        /// 봇 사용 여부를 스트리머 ID로 검색
+        /// </summary>
+        /// <param name="UserId">string 스트리머 ID</param>
+        /// <returns>int 봇 사용 여부</returns>
         public int FindBotInUseByUserId(string UserId)
         {
             long StreamerId = Convert.ToInt64(UserId);
@@ -344,6 +422,11 @@ namespace TwitchChatBot.Service
             }
         }
 
+        /// <summary>
+        /// 스트리머 상세 정보를 가져온다.
+        /// </summary>
+        /// <param name="StreamerId">스트리머 ID</param>
+        /// <returns>StreamerDetail 스트리머 상세 정보</returns>
         public StreamerDetail FindStreamerDetail(long StreamerId)
         {
             StreamerDetail StreamerDetail = null;
@@ -377,11 +460,14 @@ namespace TwitchChatBot.Service
                 }
                 Conn.Close();
             }
-
-
             return StreamerDetail;
         }
 
+        /// <summary>
+        /// 스트리머 상세를 업데이트
+        /// </summary>
+        /// <param name="StreamerDetail">스트리머 상세 정보</param>
+        /// <returns>int 쿼리 실행 row 수</returns>
         public int UpdateStreamerDetail(StreamerDetail StreamerDetail)
         {
             int Result = 0;
@@ -415,5 +501,5 @@ namespace TwitchChatBot.Service
                 return Result;
             }
         }
-    }
-}
+    } // end class
+} // end namespace

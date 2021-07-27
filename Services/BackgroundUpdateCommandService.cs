@@ -24,7 +24,7 @@ namespace TwitchChatBot.Services
         /// 주기적으로 실행되는 작업
         /// </summary>
         /// <param name="cancellationToken">CancellationToken 작업 완료 여부 flag값</param>
-        /// <returns></returns>
+        /// <returns>Task</returns>
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -32,7 +32,7 @@ namespace TwitchChatBot.Services
                 ThreadExecutorService.UpdateCommandData(); // Command 데이터를 Update 해준다.
 
                 await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken); // 2분마다 반복
-            } // end while
-        } // end ExecuteAsync
+            }
+        }
     } // end class
 } // end namespace

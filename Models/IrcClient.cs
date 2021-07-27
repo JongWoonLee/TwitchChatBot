@@ -32,8 +32,8 @@ namespace TwitchChatBot.Models
                 this.UserName = UserName;
                 this.Channel = Channel;
 
-                TcpClient = new TcpClient(Ip, Port);
-                NetworkStream Stream = TcpClient.GetStream();
+                TcpClient = new TcpClient(Ip, Port); // 연결을 맺고
+                NetworkStream Stream = TcpClient.GetStream(); // Stream을 얻어와서
                 InputStream = new StreamReader(Stream);
                 OutputStream = new StreamWriter(Stream) { NewLine = "\r\n", AutoFlush = true };
                 SendJoinMessage(Password);
@@ -58,13 +58,13 @@ namespace TwitchChatBot.Models
             catch (Exception e)
             {
                 Console.WriteLine("SendIrcMessage : " + e.Message);
-            } // end try
+            } 
         }
 
         /// <summary>
         /// 채팅방에 입장하게 해주는 Connect Message
         /// </summary>
-        /// <param name="Password"></param>
+        /// <param name="Password">봇 AccessToken</param>
         private void SendJoinMessage(string Password)
         {
             SendIrcMessage("PASS " + Password); // 
@@ -75,6 +75,10 @@ namespace TwitchChatBot.Models
             SendIrcMessage("CAP REQ :twitch.tv/tags"); 
         }
 
+        /// <summary>
+        /// PRIVMSG 형식으로 메세지를 출력(전체 메세지)
+        /// </summary>
+        /// <param name="Message">보내려는 Message</param>
         public void SendPublicChatMessage(string Message)
         {
             try
@@ -85,15 +89,19 @@ namespace TwitchChatBot.Models
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-            } // end try
+            } 
         }
 
+        /// <summary>
+        /// 메세지를 수신한다.(있을때까지 대기)
+        /// </summary>
+        /// <returns>Task<string> Message</returns>
         public async Task<string> ReadMessage()
         {
             {
                 try
                 {
-                    return await InputStream.ReadLineAsync();
+                    return await InputStream.ReadLineAsync(); // 비동기적으로 메세지를 읽는다.
                 }
                 catch (IOException ioe)
                 {
@@ -106,12 +114,16 @@ namespace TwitchChatBot.Models
                 }
             }
         }
+
+        /// <summary>
+        /// Tcp연결을 닫는다.
+        /// </summary>
         public void CloseTcpClient()
         {
             try
             {
-                this.TcpClient.GetStream().Close();
-                this.TcpClient.Close();
+                this.TcpClient.GetStream().Close(); // 스트림을 먼저 닫고,
+                this.TcpClient.Close(); // TcpClient도 닫아준다.
             }
             catch (ObjectDisposedException e)
             {
@@ -120,29 +132,18 @@ namespace TwitchChatBot.Models
             catch (InvalidOperationException e)
             {
                 Console.WriteLine("InvalidOperationException: " + e.ToString());
-            } // end try
+            }
         }
 
         /// <summary>
         /// 읽을 Data가 있는지 동기적으로 확인할 수 있는 Method
         /// </summary>
-        /// <returns></returns>
-        public bool IsDataAvailable() // 기껏 비동기로 짠 이유가 없는데
+        /// <returns>bool 수신 데이터 여부</returns>
+        public bool IsDataAvailable()
         {
             NetworkStream Stream = (NetworkStream)InputStream.BaseStream;
             Console.WriteLine("DataAvailable : " + Stream.DataAvailable);
             return Stream.DataAvailable;
-        }
-
-        class CallbackArg { }
-        class PrimeCallbackArg : CallbackArg
-        {
-            public int Prime;
-
-                public PrimeCallbackArg(int prime)
-            {
-                this.Prime = prime;
-            }
         }
     }
 }

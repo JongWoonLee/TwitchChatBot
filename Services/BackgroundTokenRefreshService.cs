@@ -26,7 +26,7 @@ namespace TwitchChatBot.Service
         /// 주기적으로 실행되는 작업
         /// </summary>
         /// <param name="cancellationToken">CancellationToken 작업 완료 여부 flag값</param>
-        /// <returns></returns>
+        /// <returns>Task</returns>
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -35,12 +35,12 @@ namespace TwitchChatBot.Service
                 var ManagedBot = ThreadExecutorService.ManagedBot; // 봇 리스트를 얻어온다.
 
                 // 봇을 돌면서 StreamerToken 값을 갱신해준다.
-                foreach(long Key in ManagedBot.Keys)
+                foreach (long Key in ManagedBot.Keys)
                 {
-                  ManagedBot[Key].StreamerToken = ThreadExecutorService.ValidateAccessToken(ManagedBot[Key].StreamerToken.RefreshToken);
+                    ManagedBot[Key].StreamerToken = ThreadExecutorService.ValidateAccessToken(ManagedBot[Key].StreamerToken.RefreshToken);
                 }
                 await Task.Delay(TimeSpan.FromHours(1), cancellationToken); // 1시간 주기로 반복
-            } //end while
-        } // end ExecuteAsync
+            }
+        }
     } // end class
 } // end namespace
