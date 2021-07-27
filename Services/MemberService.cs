@@ -22,27 +22,10 @@ namespace TwitchChatBot.Service
         }
 
         /// <summary>
-        /// RefreshToken 값을 이용해 처음 BotToken 값을 Validate
+        /// StreamerId 값을 이용해 Streamer를 찾는다.
         /// </summary>
-        /// <param name="RefreshToken"></param>
+        /// <param name="StreamerId"></param>
         /// <returns></returns>
-        public TwitchToken ValidateAccessToken(string RefreshToken)
-        {
-            string Url = "https://id.twitch.tv/oauth2/token";
-            var Client = new WebClient();
-            var Data = new NameValueCollection();
-            Data["grant_type"] = "refresh_token";
-            Data["client_id"] = ClientId;
-            Data["client_secret"] = this.ClientSecret;
-            Data["refresh_token"] = RefreshToken;
-
-            var Response = Client.UploadValues(Url, "POST", Data);
-            string Str = Encoding.Default.GetString(Response);
-            TwitchToken TwitchToken = JsonConvert.DeserializeObject<TwitchToken>(Str);
-
-            return TwitchToken;
-        }
-
         public Streamer FindStreamer(long StreamerId)
         {
             Streamer Streamer = new Streamer();
@@ -74,7 +57,7 @@ namespace TwitchChatBot.Service
         }
 
 
-        public TwitchToken ConnectReleasesWebClient(string Code)
+        public TwitchToken GettingTokens(string Code)
         {
             string Url = "https://id.twitch.tv/oauth2/token";
             var Client = new WebClient();
@@ -125,10 +108,11 @@ namespace TwitchChatBot.Service
             string SQL = $"INSERT INTO streamer(streamer_id,channel_name,refresh_token) VALUES(@StreamerId, @ChannelName, @RefreshToken);";
             using (MySqlConnection Conn = GetConnection())
             {
+                Conn.Open();
+                MySqlTransaction Transaction = Conn.BeginTransaction();
                 try
                 {
-                    Conn.Open();
-                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn, Transaction);
                     Cmd.Parameters.AddWithValue("@StreamerId", User.UserId);
                     Cmd.Parameters.AddWithValue("@ChannelName", User.Login);
                     Cmd.Parameters.AddWithValue("@RefreshToken", TwitchToken.RefreshToken);
@@ -136,37 +120,48 @@ namespace TwitchChatBot.Service
                     if (Result == 1)
                     {
                         Console.WriteLine("Insert Success");
-                        InsertStreamerDetail(Conn, User.UserId);
+                        InsertStreamerDetail(Cmd, User.UserId);
                     }
                     else
                     {
                         Console.WriteLine("Insert Fail!!");
+                        Transaction.Rollback();
                     }
                 }
                 catch (MySqlException e)
                 {
                     Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
                     Console.WriteLine(e.ToString());
+                    Transaction.Rollback();
                 }
                 Conn.Close();
                 return Result;
             }
         }
 
-        private int InsertStreamerDetail(MySqlConnection Conn, long InheritedKey)
+        private int InsertStreamerDetail(MySqlCommand MySqlCommand, long InheritedKey)
         {
             var Result = 0;
-            string SQL = $"INSERT INTO streamer_detail(streamer_id) VALUES(@StreamerId);";
-            MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
-            Cmd.Parameters.AddWithValue("@StreamerId", InheritedKey);
-            Result = Cmd.ExecuteNonQuery();
-            if (Result == 1)
+            try
             {
-                Console.WriteLine("Insert Success");
+                MySqlCommand.CommandText = $"INSERT INTO streamer_detail(streamer_id) VALUES(@InheritedId);";
+                MySqlCommand.Parameters.AddWithValue("@InheritedId", InheritedKey);
+                Result = MySqlCommand.ExecuteNonQuery();
+                if (Result == 1)
+                {
+                    Console.WriteLine("Insert Success");
+                    MySqlCommand.Transaction.Commit();
+                }
+                else
+                {
+                    Console.WriteLine("Insert Fail!!");
+                    MySqlCommand.Transaction.Rollback();
+                }
             }
-            else
+            catch (Exception e)
             {
-                Console.WriteLine("Insert Fail!!");
+                Console.WriteLine(e.ToString());
+                MySqlCommand.Transaction.Rollback();
             }
             return Result;
         }
