@@ -366,7 +366,15 @@ namespace TwitchChatBot.Models
         public void RenewForbiddenWordList()
         {
             this.ForbiddenWordList = FindForbiddenWords();
-        } // end RenewForbiddenWordList;
+        }
+
+        /// <summary>
+        /// 스트리머 상세 정보에 변화가 생기면 변경하는 메서드
+        /// </summary>
+        public void RenewStreamerDetail(long StreamerId)
+        {
+            this.StreamerDetail = FindStreamerDetail(StreamerId);
+        }
 
         /// <summary>
         /// Twitch Api에 현재 채널이 방송중인지 여부를 확인해준다.

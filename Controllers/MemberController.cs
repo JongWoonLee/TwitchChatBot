@@ -104,6 +104,7 @@ namespace TwitchChatBot.Controllers
                     var ForbiddenWordTimeout = Convert.ToInt32(JObject["forbiddenWordTimeout"]);
                     StreamerDetail StreamerDetail = new StreamerDetail(StreamerId, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
                     MemberService.UpdateStreamerDetail(StreamerDetail); // StreamerDetail 정보를 Update
+                    ThreadExecutorService.ManagedBot[StreamerId].RenewStreamerDetail(StreamerId); // 해당 유저의 봇 금지어 정보 갱신
                 }
                 Result = "success";
             }
