@@ -41,10 +41,10 @@ namespace TwitchChatBot.Controllers
                     string url = MemberService.GetRedirectURL();
                     return Redirect(url);
                 } // end if
-                TwitchToken TwitchToken = MemberService.ConnectReleasesWebClient(Code); // code 가 있으면 TwitchToken을 얻어오고
+                TwitchToken TwitchToken = MemberService.GettingTokens(Code); // code 가 있으면 TwitchToken을 얻어오고
                 User User = MemberService.ValidatingRequests(TwitchToken.AccessToken); // TwitchToken 을 이용해서 User를 얻어오고
                 int InsertResult = MemberService.FindStreamer(User.UserId).StreamerIsValid() ?
-                MemberService.InsertStreamer(TwitchToken, User) : 0; // Streamer Table 에 Insert 유효하지 않은 Insert면 0 반환
+                 0 : MemberService.InsertStreamer(TwitchToken, User); // 중복이 아닐 경우에 Streamer Table 에 Insert 유효하지 않은 Insert면 0 반환
 
                 // Cookie 에 User정보가 없으면 저장
                 if (string.IsNullOrWhiteSpace(Request.Cookies["UserId"]))
