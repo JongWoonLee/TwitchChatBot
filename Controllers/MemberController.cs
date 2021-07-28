@@ -184,7 +184,7 @@ namespace TwitchChatBot.Controllers
                     var GreetingMessage = (string)JObject["GreetingMessage"];
                     var DonationLink = (string)JObject["DonationLink"];
                     var ForbiddenWordLimit = (bool)JObject["ForbiddenWordLimit"];
-                    var ForbiddenWordTimeout = Convert.ToInt32(JObject["forbiddenWordTimeout"]);
+                    var ForbiddenWordTimeout = Convert.ToInt32(JObject["ForbiddenWordTimeout"]);
                     StreamerDetail StreamerDetail = new StreamerDetail(StreamerId, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
                     MemberService.UpdateStreamerDetail(StreamerDetail); // StreamerDetail 정보를 Update
                     ThreadExecutorService.ManagedBot[StreamerId].RenewStreamerDetail(StreamerId); // 해당 유저의 봇 금지어 정보 갱신
