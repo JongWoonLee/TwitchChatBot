@@ -89,6 +89,7 @@ namespace TwitchChatBot.Models
                 try
                 {
                     string Message = await IrcClient.ReadMessage();
+
                     Console.WriteLine(Message); // IRC 메세지를 출력
 
                     string Pattern = $@"name=(.*)(;em.*);id=(.*)(;mod.*);user-(.*)\s:(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:(!?.*)"; // 메세지 정규식 패턴
@@ -307,6 +308,7 @@ namespace TwitchChatBot.Models
                         while (Reader.Read())
                         {
                             ForbiddenWordList += $"{Reader["forbidden_word"]}|";
+                            
                         }
                         ForbiddenWordList = ForbiddenWordList.Substring(0, ForbiddenWordList.Length == 0 ? 0 : ForbiddenWordList.Length - 1); // 읽어온 결과가 없으면 0으로 반환
                     } 

@@ -128,17 +128,17 @@ namespace TwitchChatBot.Controllers
                 string ChannelName = Request.Cookies["ChannelName"];
                 string AccessToken = Request.Cookies["AccessToken"];
 
+                MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse);  // 봇 사용 여부를 Update
+
                 // 봇을 사용 한다면
                 if (BotInUse == 1)
                 {
                     Streamer Streamer = MemberService.FindStreamer(StreamerId); // 스트리머 정보를 찾아서 
-                    MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse);  // 봇 사용 여부를 Update
                     ThreadExecutorService.RegisterBot(StreamerId, ChannelName, ChannelName, new TwitchToken(AccessToken, Streamer.RefreshToken)); // 봇을 실행
                 }
                 // 봇을 사용 안한다면
                 else
                 {
-                    MemberService.UpdateStreamerDetailBotInUse(StreamerId, BotInUse); // 봇 사용 여부를 Update
                     Result = ThreadExecutorService.DisposeBot(StreamerId); // 봇을 폐기
                 }
             }
