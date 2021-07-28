@@ -25,7 +25,7 @@ namespace TwitchChatBot.Service
         /// <summary>
         /// 주기적으로 실행되는 작업
         /// </summary>
-        /// <param name="cancellationToken">CancellationToken 작업 완료 여부 flag값</param>
+        /// <param name="cancellationToken">작업 완료 여부 flag값</param>
         /// <returns>Task</returns>
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {

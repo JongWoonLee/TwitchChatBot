@@ -53,7 +53,6 @@ namespace TwitchChatBot.Models
             this.IrcClient = IrcClient;
             this.PingSender = PingSender;
             this.Commands = Commands;
-            this.ConnectionString = base.ConnectionString;
             this.ThreadDoWorkRun = true; // Thread flag 값 true로 설정
             this.StreamerToken = StreamerToken;
             this.ForbiddenWordList = FindForbiddenWords(); // 금지어 리스트 읽어오기
@@ -197,21 +196,6 @@ namespace TwitchChatBot.Models
         }
 
         /// <summary>
-        /// 쿨타임 설정
-        /// </summary>
-        /// <param name="Command">명령어 객체</param>
-        private void SetTimeout(Command Command)
-        {
-            // 들어오면 Command의 CoolDown 동안 Block 을 true로 설정
-            Command.Block = true;
-            Task.Run(async () =>
-            {
-                await Task.Delay(Command.CommandCoolDown);
-                Command.Block = false;
-            });
-        }
-
-        /// <summary>
         /// 트위치 명령어 출력부 생성
         /// </summary>
         /// <param name="Command">Input Command</param>
@@ -227,6 +211,21 @@ namespace TwitchChatBot.Models
                     break;
             }
             return Result;
+        }
+
+        /// <summary>
+        /// 쿨타임 설정
+        /// </summary>
+        /// <param name="Command">명령어 객체</param>
+        private void SetTimeout(Command Command)
+        {
+            // 들어오면 Command의 CoolDown 동안 Block 을 true로 설정
+            Command.Block = true;
+            Task.Run(async () =>
+            {
+                await Task.Delay(Command.CommandCoolDown);
+                Command.Block = false;
+            });
         }
 
         /// <summary>

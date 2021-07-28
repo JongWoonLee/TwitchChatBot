@@ -22,8 +22,6 @@ namespace TwitchChatBot.Service
         /// <param name="ClientSecret">string App ClientSecret</param>
         public MemberService(string ConnectionString, string DefaultIP, string ClientSecret) : base(ConnectionString, ClientSecret)
         {
-            this.ConnectionString = base.ConnectionString;
-            this.ClientSecret = base.ClientSecret;
             this.DefaultIP = DefaultIP;
         }
 
@@ -63,6 +61,18 @@ namespace TwitchChatBot.Service
         }
 
         /// <summary>
+        /// 인가코드를 위한 주소를 얻어오는 메소드
+        /// </summary>
+        /// <returns>string Redirect URL</returns>
+        public string GetRedirectURL()
+        {
+            string Url = "https://id.twitch.tv/oauth2/authorize";
+            string RedirectUri = $"https://{DefaultIP}/member/index";
+            string ResponseType = "code";
+            return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
+        }
+
+        /// <summary>
         /// Authentication Token 을 얻어온다.
         /// </summary>
         /// <param name="Code">인가코드</param>
@@ -93,7 +103,6 @@ namespace TwitchChatBot.Service
             return TwitchToken;
         }
 
-
         /// <summary>
         /// UserAccessToken을 이용해 Id 값을 읽어온다.
         /// </summary>
@@ -123,17 +132,6 @@ namespace TwitchChatBot.Service
             return User;
         }
 
-        /// <summary>
-        /// 인가코드를 위한 주소를 얻어오는 메소드
-        /// </summary>
-        /// <returns>string Redirect URL</returns>
-        public string GetRedirectURL()
-        {
-            string Url = "https://id.twitch.tv/oauth2/authorize";
-            string RedirectUri = $"https://{DefaultIP}/member/index";
-            string ResponseType = "code";
-            return $"{Url}?client_id={ClientId}&redirect_uri={RedirectUri}&response_type={ResponseType}&scope=chat:edit chat:read user:edit whispers:read whispers:edit user:read:email";
-        }
 
         /// <summary>
         /// StreamerInsert
@@ -209,6 +207,73 @@ namespace TwitchChatBot.Service
                 MySqlCommand.Transaction.Rollback();
             }
             return Result;
+        }
+
+        /// <summary>
+        /// 봇 사용 여부를 스트리머 ID로 검색
+        /// </summary>
+        /// <param name="UserId">string 스트리머 ID</param>
+        /// <returns>int 봇 사용 여부</returns>
+        public int FindBotInUseByUserId(string UserId)
+        {
+            long StreamerId = Convert.ToInt64(UserId);
+            int Result = 0;
+            string SQL = $"SELECT bot_in_use FROM streamer_detail where streamer_id = {StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Result = Convert.ToInt32(Cmd.ExecuteScalar());
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
+        }
+
+        /// <summary>
+        /// 스트리머 상세를 업데이트
+        /// </summary>
+        /// <param name="StreamerDetail">스트리머 상세 정보</param>
+        /// <returns>int 쿼리 실행 row 수</returns>
+        public int UpdateStreamerDetail(StreamerDetail StreamerDetail)
+        {
+            int Result = 0;
+            string SQL = $"UPDATE streamer_detail SET donation_link = @DonationLink, greeting_message = @GreetingMessage, forbidden_word_limit = @ForbiddenWordLimit,forbidden_word_timeout = @ForbiddenWordTimeout WHERE streamer_id = {StreamerDetail.StreamerId};";
+            using (MySqlConnection Conn = GetConnection())
+            {
+                try
+                {
+                    Conn.Open();
+                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
+                    Cmd.Parameters.AddWithValue("@DonationLink", StreamerDetail.DonationLink);
+                    Cmd.Parameters.AddWithValue("@GreetingMessage", StreamerDetail.GreetingMessage);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWordLimit", StreamerDetail.ForbiddenWordLimit);
+                    Cmd.Parameters.AddWithValue("@ForbiddenWordTimeout", StreamerDetail.ForbiddenWordTimeout);
+                    Result = Cmd.ExecuteNonQuery();
+                    if (Result == 1)
+                    {
+                        Console.WriteLine("Update Success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Update Fail!!");
+                    }
+                }
+                catch (MySqlException e)
+                {
+                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
+                    Console.WriteLine(e.ToString());
+                }
+                Conn.Close();
+                return Result;
+            }
         }
 
         /// <summary>
@@ -395,34 +460,6 @@ namespace TwitchChatBot.Service
         }
 
         /// <summary>
-        /// 봇 사용 여부를 스트리머 ID로 검색
-        /// </summary>
-        /// <param name="UserId">string 스트리머 ID</param>
-        /// <returns>int 봇 사용 여부</returns>
-        public int FindBotInUseByUserId(string UserId)
-        {
-            long StreamerId = Convert.ToInt64(UserId);
-            int Result = 0;
-            string SQL = $"SELECT bot_in_use FROM streamer_detail where streamer_id = {StreamerId};";
-            using (MySqlConnection Conn = GetConnection()) // 미리 생성된 Connection을 얻어온다.
-            {
-                try
-                {
-                    Conn.Open();
-                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
-                    Result = Convert.ToInt32(Cmd.ExecuteScalar());
-                }
-                catch (MySqlException e)
-                {
-                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
-                }
-                Conn.Close();
-                return Result;
-            }
-        }
-
-        /// <summary>
         /// 스트리머 상세 정보를 가져온다.
         /// </summary>
         /// <param name="StreamerId">스트리머 ID</param>
@@ -461,45 +498,6 @@ namespace TwitchChatBot.Service
                 Conn.Close();
             }
             return StreamerDetail;
-        }
-
-        /// <summary>
-        /// 스트리머 상세를 업데이트
-        /// </summary>
-        /// <param name="StreamerDetail">스트리머 상세 정보</param>
-        /// <returns>int 쿼리 실행 row 수</returns>
-        public int UpdateStreamerDetail(StreamerDetail StreamerDetail)
-        {
-            int Result = 0;
-            string SQL = $"UPDATE streamer_detail SET donation_link = @DonationLink, greeting_message = @GreetingMessage, forbidden_word_limit = @ForbiddenWordLimit,forbidden_word_timeout = @ForbiddenWordTimeout WHERE streamer_id = {StreamerDetail.StreamerId};";
-            using (MySqlConnection Conn = GetConnection())
-            {
-                try
-                {
-                    Conn.Open();
-                    MySqlCommand Cmd = new MySqlCommand(SQL, Conn);
-                    Cmd.Parameters.AddWithValue("@DonationLink", StreamerDetail.DonationLink);
-                    Cmd.Parameters.AddWithValue("@GreetingMessage", StreamerDetail.GreetingMessage);
-                    Cmd.Parameters.AddWithValue("@ForbiddenWordLimit", StreamerDetail.ForbiddenWordLimit);
-                    Cmd.Parameters.AddWithValue("@ForbiddenWordTimeout", StreamerDetail.ForbiddenWordTimeout);
-                    Result = Cmd.ExecuteNonQuery();
-                    if (Result == 1)
-                    {
-                        Console.WriteLine("Update Success");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Update Fail!!");
-                    }
-                }
-                catch (MySqlException e)
-                {
-                    Console.WriteLine("DB Connection Fail!!!!!!!!!!!");
-                    Console.WriteLine(e.ToString());
-                }
-                Conn.Close();
-                return Result;
-            }
         }
     } // end class
 } // end namespace

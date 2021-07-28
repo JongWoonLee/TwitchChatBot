@@ -26,6 +26,16 @@ namespace TwitchChatBot.Controllers
         }
 
         /// <summary>
+        /// 로그인 화면으로 이동
+        /// </summary>
+        /// <returns>IActionResult</returns>
+        [HttpGet, Route("/member/login")]
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        /// <summary>
         /// Twitch Login
         /// </summary>
         /// <param name="Code">Token을 가져오기 위한 AccessCode</param>
@@ -61,58 +71,21 @@ namespace TwitchChatBot.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        [HttpGet, Route("/member/login")]
-        public IActionResult Login()
-        {
-            return View();
-        }
 
         /// <summary>
-        /// StreamerDetail 정보를 설정하는 페이지
+        /// Logout 하고 브라우저 정보 초기화
         /// </summary>
         /// <returns>IActionResult</returns>
-        [HttpGet, Route("/member/details")]
-        public IActionResult Details()
+        [HttpGet, Route("/member/logout")]
+        public IActionResult Logout()
         {
-            string UserId = Request.Cookies["UserId"];
-            long StreamerId = Convert.ToInt64(UserId);
-            ViewData["StreamerDetail"] = MemberService.FindStreamerDetail(StreamerId); // StreamerId 를 가지고 StreamerDetail정보를 읽어온다.
-            return View();
-        }
-
-        /// <summary>
-        /// StreamerDetail 정보를 수정
-        /// </summary>
-        /// <returns>string 실행결과</returns>
-        [HttpPost, Route("/member/details")]
-        public string DetailsPost()
-        {
-            string Result = "";
-            try
+            if (!string.IsNullOrWhiteSpace(Request.Cookies["UserId"])) // Cookie 에 User정보가 없으면 저장.
             {
-                /// 입력받은 StreamerDetail 정보를 읽어오고 Update
-                using (var Reader = new StreamReader(Request.Body))
-                {
-                    var Body = Reader.ReadToEndAsync();
-                    string userId = Request.Cookies["UserId"];
-                    long StreamerId = Convert.ToInt64(userId);
-
-                    JObject JObject = JObject.Parse(Body.Result);
-                    var GreetingMessage = (string)JObject["GreetingMessage"];
-                    var DonationLink = (string)JObject["DonationLink"];
-                    var ForbiddenWordLimit = (bool)JObject["ForbiddenWordLimit"];
-                    var ForbiddenWordTimeout = Convert.ToInt32(JObject["forbiddenWordTimeout"]);
-                    StreamerDetail StreamerDetail = new StreamerDetail(StreamerId, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
-                    MemberService.UpdateStreamerDetail(StreamerDetail); // StreamerDetail 정보를 Update
-                    ThreadExecutorService.ManagedBot[StreamerId].RenewStreamerDetail(StreamerId); // 해당 유저의 봇 금지어 정보 갱신
-                }
-                Result = "success";
+                Response.Cookies.Delete("AccessToken");
+                Response.Cookies.Delete("UserId");
+                Response.Cookies.Delete("ChannelName");
             }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-            return Result;
+            return RedirectToAction("Index", "Home");
         }
 
         /// <summary>
@@ -178,19 +151,51 @@ namespace TwitchChatBot.Controllers
         }
 
         /// <summary>
-        /// Logout 하고 브라우저 정보 초기화
+        /// StreamerDetail 정보를 설정하는 페이지
         /// </summary>
         /// <returns>IActionResult</returns>
-        [HttpGet, Route("/member/logout")]
-        public IActionResult Logout()
+        [HttpGet, Route("/member/details")]
+        public IActionResult Details()
         {
-            if (!string.IsNullOrWhiteSpace(Request.Cookies["UserId"])) // Cookie 에 User정보가 없으면 저장.
+            string UserId = Request.Cookies["UserId"];
+            long StreamerId = Convert.ToInt64(UserId);
+            ViewData["StreamerDetail"] = MemberService.FindStreamerDetail(StreamerId); // StreamerId 를 가지고 StreamerDetail정보를 읽어온다.
+            return View();
+        }
+
+        /// <summary>
+        /// StreamerDetail 정보를 수정
+        /// </summary>
+        /// <returns>string 실행결과</returns>
+        [HttpPost, Route("/member/details")]
+        public string DetailsPost()
+        {
+            string Result = "";
+            try
             {
-                Response.Cookies.Delete("AccessToken");
-                Response.Cookies.Delete("UserId");
-                Response.Cookies.Delete("ChannelName");
+                /// 입력받은 StreamerDetail 정보를 읽어오고 Update
+                using (var Reader = new StreamReader(Request.Body))
+                {
+                    var Body = Reader.ReadToEndAsync();
+                    string userId = Request.Cookies["UserId"];
+                    long StreamerId = Convert.ToInt64(userId);
+
+                    JObject JObject = JObject.Parse(Body.Result);
+                    var GreetingMessage = (string)JObject["GreetingMessage"];
+                    var DonationLink = (string)JObject["DonationLink"];
+                    var ForbiddenWordLimit = (bool)JObject["ForbiddenWordLimit"];
+                    var ForbiddenWordTimeout = Convert.ToInt32(JObject["forbiddenWordTimeout"]);
+                    StreamerDetail StreamerDetail = new StreamerDetail(StreamerId, DonationLink, GreetingMessage, ForbiddenWordLimit ? 1 : 0, ForbiddenWordTimeout);
+                    MemberService.UpdateStreamerDetail(StreamerDetail); // StreamerDetail 정보를 Update
+                    ThreadExecutorService.ManagedBot[StreamerId].RenewStreamerDetail(StreamerId); // 해당 유저의 봇 금지어 정보 갱신
+                }
+                Result = "success";
             }
-            return RedirectToAction("Index", "Home");
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
+            return Result;
         }
 
         /// <summary>

@@ -33,8 +33,6 @@ namespace TwitchChatBot.Service
         /// <param name="ClientSecret">App ClientSecret</param>
         public ThreadExecutorService(string ConnectionString, string ClientSecret) : base(ConnectionString, ClientSecret)
         {
-            this.ConnectionString = base.ConnectionString;
-            this.ClientSecret = base.ClientSecret;
             this.ManagedBot = new Dictionary<long, SimpleTwitchBot>();
             this.BotToken = ValidateAccessToken(FindBotRefreshToken()); // 봇 유저를 찾아서 봇 토큰을 얻어온다.
             this.Commands = FindCommands(); // 공통 Command이므로 매번 읽어오는게 아니라 Service가 가지고 있고 봇이 추가될때 주입해준다.
