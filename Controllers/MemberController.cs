@@ -102,7 +102,7 @@ namespace TwitchChatBot.Controllers
                 int Result = MemberService.FindBotInUseByUserId(UserId); // 유저가 봇을 사용하는지 여부를 읽어온다.
                 ViewData["Result"] = Result;
                 return View();
-            } 
+            }
             return RedirectToAction("Index", "Home");
         }
 
@@ -142,11 +142,11 @@ namespace TwitchChatBot.Controllers
                     Result = ThreadExecutorService.DisposeBot(StreamerId); // 봇을 폐기
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
-            
+
             return Result;
         }
 
@@ -213,7 +213,7 @@ namespace TwitchChatBot.Controllers
 
                 ViewData["ForbiddenWordList"] = ForbiddenWordList;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
@@ -248,26 +248,27 @@ namespace TwitchChatBot.Controllers
                 long StreamerId = Convert.ToInt64(UserId);
 
                 // Todo 값에 의해 3가지 작업 분리
-                if(!string.IsNullOrWhiteSpace(ForbiddenWord))
+                if (!string.IsNullOrWhiteSpace(ForbiddenWord))
                 {
                     switch (Todo)
                     {
                         case "Insert":
                             Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord); // 금지어 Insert 후
-                            ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList(); // 해당 유저의 봇 금지어 정보 갱신
                             break;
                         case "Update":
                             Result = MemberService.UpdateForbiddenWord(StreamerId, ForbiddenWord, PrevWord); // 금지어 Update 후
-                            ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList();           // 해당 유저의 봇 금지어 정보 갱신
                             break;
                         case "Delete":
                             Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord); // 금지어 Delete 후
-                            ThreadExecutorService.ManagedBot[StreamerId].RenewForbiddenWordList(); // 해당 유저의 봇 금지어 정보 갱신
                             break;
-                    } 
+                    }
+                    if (ThreadExecutorService.ManagedBot.TryGetValue(StreamerId, out SimpleTwitchBot SimpleTwitchBot))
+                    {
+                        SimpleTwitchBot.RenewForbiddenWordList(); // 해당 유저의 봇 금지어 정보 갱신
+                    }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
