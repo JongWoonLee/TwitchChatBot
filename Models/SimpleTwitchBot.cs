@@ -95,56 +95,51 @@ namespace TwitchChatBot.Models
                     string Pattern = $@"name=(.*)(;em.*);id=(.*)(;mod.*);user-(.*)\s:(\w+)!(\w+)@(\w+).tmi.twitch.tv\s(\w+)\s#{this.IrcClient.Channel}\s:(!?.*)"; // 메세지 정규식 패턴
                     Match Match = Regex.Match(Message.Trim(), Pattern);
                     // Pattern에 일치하는 메세지가 들어오면
-                    if (Match.Success && Match.Groups[9].Value.Trim().Equals("PRIVMSG"))
+                    string MessageType = Match.Groups[9].Value.Trim();
+                    if (Match.Success && MessageType.Equals("PRIVMSG"))
                     {
-                        // 금지어 기능을 사용하면
-                        if (StreamerDetail.ForbiddenWordLimit)
+                        string MainMessage = Match.Groups[10].Value.Trim();
+                        string User = Match.Groups[6].Value.Trim();
+                        string MessageId = Match.Groups[3].Value.Trim();
+                        // 채팅 제한 시간이 0보다 크면
+                        if (StreamerDetail.ForbiddenWordLimit && IsContainsForbiddenWord(MainMessage) && StreamerDetail.ForbiddenWordTimeout > 0)
                         {
-                            // 메세지가 금지어를 포함하면
-                            if (IsContainsForbiddenWord(Match.Groups[10].Value.Trim()))
-                            {
-                                // 채팅 제한 시간이 0보다 크면
-                                if (StreamerDetail.ForbiddenWordTimeout > 0)
-                                {
-                                    IrcClient.SendPublicChatMessage($"/timeout {Match.Groups[6].Value.Trim()} {StreamerDetail.ForbiddenWordTimeout}"); // timeout으로 메세지 삭제와 시간동안 채팅제한까지
-                                }
-                                else
-                                {
-                                    IrcClient.SendPublicChatMessage($"/delete {Match.Groups[3].Value.Trim()}"); // target-msg 만 삭제
-                                }
-                            }
+                            IrcClient.SendPublicChatMessage($"/timeout {User} {StreamerDetail.ForbiddenWordTimeout}"); // timeout으로 메세지 삭제와 시간동안 채팅제한까지
+                        }
+                        else if (StreamerDetail.ForbiddenWordLimit && IsContainsForbiddenWord(MainMessage))
+                        {
+                            IrcClient.SendPublicChatMessage($"/delete {MessageId}"); // target-msg 만 삭제
                         }
 
                         // 명령어 부분
-                        var RawCommand = Match.Groups[10].Value.Trim();
-                        int IntIndexParseSign = RawCommand.IndexOf(' ');
-                        string CommandHead = IntIndexParseSign == -1 ? RawCommand : RawCommand.Substring(0, IntIndexParseSign); // Command
+
+                        int IntIndexParseSign = MainMessage.IndexOf(' ');
+                        string CommandHead = IntIndexParseSign == -1 ? MainMessage : MainMessage.Substring(0, IntIndexParseSign); // Command
 
                         foreach (KeyValuePair<string, Command> Cmd in Commands)
                         {
-                            // 메세지와 Command가 일치하면
-                            if (CommandHead.Equals(Cmd.Key))
+                            // 메세지와 Command가 일치하지 않으면
+                            if (!CommandHead.Equals(Cmd.Key)) continue;
+
+                            // Command 별로 Cooldown이 존재해서 Block == true 일 경우엔 발동 하지 않는다.
+                            if (Cmd.Value.Block) break;
+
+                            SetTimeout(Cmd.Value); // Command 에 설정된 CoolDown Trigger
+                                                   // CommandType 에 맞게 명령어 처리
+                            switch (Cmd.Value.CommandType)
                             {
-                                // Command 별로 Cooldown이 존재해서 Block == true 일 경우엔 발동 하지 않는다.
-                                if (!Cmd.Value.Block)
-                                {
-                                    SetTimeout(Cmd.Value); // Command 에 설정된 CoolDown Trigger
-                                                           // CommandType 에 맞게 명령어 처리
-                                    switch (Cmd.Value.CommandType)
-                                    {
-                                        case (int)CommandType.Default:
-                                            IrcClient.SendPublicChatMessage(Cmd.Value.CommandBody); // 기본 명령어로, 저장된 CommandBody를 출력
-                                            break;
-                                        case (int)CommandType.Personal:
-                                            IrcClient.SendPublicChatMessage(PersonalCommandOutput(Cmd.Value, Match.Groups[6].Value.Trim())); // PersonalCommandOutput에서 CommandBody를 생성
-                                            break;
-                                        case (int)CommandType.Twitch:
-                                            IrcClient.SendPublicChatMessage(TwitchCommandOutput(Cmd.Value)); // TwitchCommandOutput에서 CommandBody를 생성
-                                            break;
-                                    }
-                                }
+                                case (int)CommandType.Default:
+                                    IrcClient.SendPublicChatMessage(Cmd.Value.CommandBody); // 기본 명령어로, 저장된 CommandBody를 출력
+                                    break;
+                                case (int)CommandType.Personal:
+                                    IrcClient.SendPublicChatMessage(PersonalCommandOutput(Cmd.Value, Match.Groups[6].Value.Trim())); // PersonalCommandOutput에서 CommandBody를 생성
+                                    break;
+                                case (int)CommandType.Twitch:
+                                    IrcClient.SendPublicChatMessage(TwitchCommandOutput(Cmd.Value)); // TwitchCommandOutput에서 CommandBody를 생성
+                                    break;
                             }
-                        } 
+
+                        }
                     }
                 }
                 catch (InvalidOperationException e)
@@ -283,7 +278,7 @@ namespace TwitchChatBot.Models
                     this.Thread.Join();
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
             }
@@ -308,10 +303,10 @@ namespace TwitchChatBot.Models
                         while (Reader.Read())
                         {
                             ForbiddenWordList += $"{Reader["forbidden_word"]}|";
-                            
+
                         }
                         ForbiddenWordList = ForbiddenWordList.Substring(0, ForbiddenWordList.Length == 0 ? 0 : ForbiddenWordList.Length - 1); // 읽어온 결과가 없으면 0으로 반환
-                    } 
+                    }
                 }
                 catch (Exception e)
                 {
@@ -320,7 +315,7 @@ namespace TwitchChatBot.Models
                 }
                 Conn.Close();
                 return ForbiddenWordList;
-            } 
+            }
         }
 
         /// <summary>
