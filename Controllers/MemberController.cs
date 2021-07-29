@@ -229,7 +229,7 @@ namespace TwitchChatBot.Controllers
         {
             int Result = 0;
             string ForbiddenWord = "";
-            string Todo = "";
+            string Method = "";
             string PrevWord = "";
 
             // Request Parameter 수집
@@ -240,7 +240,7 @@ namespace TwitchChatBot.Controllers
                     var Body = Reader.ReadToEndAsync();
                     JObject JObject = JObject.Parse(Body.Result);
                     ForbiddenWord = ((string)JObject["ForbiddenWord"]).Trim(); // 금지어
-                    Todo = (string)JObject["Todo"]; // 작업의 이름
+                    Method = (string)JObject["Todo"]; // 작업의 이름
                     PrevWord = (string)JObject["PrevWord"]; // 이전 입력 내용(Update 시에만 필요)
                 }
 
@@ -250,7 +250,7 @@ namespace TwitchChatBot.Controllers
                 // Todo 값에 의해 3가지 작업 분리
                 if (!string.IsNullOrWhiteSpace(ForbiddenWord))
                 {
-                    switch (Todo)
+                    switch (Method)
                     {
                         case "Insert":
                             Result = MemberService.InsertForbiddenWord(StreamerId, ForbiddenWord); // 금지어 Insert 후
@@ -272,7 +272,7 @@ namespace TwitchChatBot.Controllers
             {
                 Console.WriteLine(e.ToString());
             }
-            return Todo;
+            return Method;
         }
     } // end class
 } // end namespace

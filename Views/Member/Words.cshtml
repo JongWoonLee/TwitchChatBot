@@ -66,7 +66,7 @@
         if (forbiddenWord === "") {
             return false;
         }
-        var todo = "Update";
+        var method = "Update";
         // AJAX 통신 : POST
         $.ajax({
             type: "post",
@@ -76,7 +76,7 @@
             },
             data: JSON.stringify({
                 ForbiddenWord: forbiddenWord,
-                Todo: todo,
+                Method: method,
                 PrevWord: prevWord
             }),
             success: function (result) {
@@ -91,7 +91,7 @@
     });
 
     $(document).on("click", ".btn-insert", function (e) {
-        var todo = "Insert";
+        var method = "Insert";
         forbiddenWord = e.currentTarget.previousElementSibling.value.trim() || "";
         // AJAX 통신 : POST
         $.ajax({
@@ -102,7 +102,7 @@
             },
             data: JSON.stringify({
                 ForbiddenWord: forbiddenWord,
-                Todo: todo
+                Method: method
             }),
             success: function (result) {
                 if (!!result) {
@@ -117,7 +117,7 @@
 
     $(document).on("click", ".btn-delete", function (e) {
 
-        var todo = "Delete";
+        var method = "Delete";
         var forbiddenWord = e.currentTarget.previousElementSibling.previousSibling.textContent.trim() || "";
         $.ajax({
             type: "post",
@@ -127,7 +127,7 @@
             },
             data: JSON.stringify({
                 ForbiddenWord: forbiddenWord,
-                Todo: todo
+                Method: method
             }),
             success: function (result) {
                 if (!!result) {
