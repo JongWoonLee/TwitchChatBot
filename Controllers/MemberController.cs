@@ -240,7 +240,7 @@ namespace TwitchChatBot.Controllers
                     var Body = Reader.ReadToEndAsync();
                     JObject JObject = JObject.Parse(Body.Result);
                     ForbiddenWord = ((string)JObject["ForbiddenWord"]).Trim(); // 금지어
-                    Method = (string)JObject["Todo"]; // 작업의 이름
+                    Method = (string)JObject["Method"]; // 작업의 이름
                     PrevWord = (string)JObject["PrevWord"]; // 이전 입력 내용(Update 시에만 필요)
                 }
 
@@ -261,6 +261,8 @@ namespace TwitchChatBot.Controllers
                         case "Delete":
                             Result = MemberService.DeleteForbiddenWord(StreamerId, ForbiddenWord); // 금지어 Delete 후
                             break;
+                        default:
+                            throw new Exception($"unexpected Method value :{Method}");
                     }
                     if (ThreadExecutorService.ManagedBot.TryGetValue(StreamerId, out SimpleTwitchBot SimpleTwitchBot))
                     {
@@ -270,7 +272,7 @@ namespace TwitchChatBot.Controllers
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(e.Message);
             }
             return Method;
         }
